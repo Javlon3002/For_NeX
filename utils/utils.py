@@ -82,8 +82,15 @@ def prepareDataloaders(dataset, dpath, random_split=False, train_ratio=1, num_wo
     def clean_path(list_of_path):
       return list(map(lambda x: str(os.path.basename(x)).lower(), list_of_path))
 
-    if os.path.exists(os.path.join(dpath,'poses_bounds.npy')):
-      #LLFF dataset which is use every 8 images to be training data
+    if os.path.exists(dpath + "/train_image.txt") and os.path.exists(dpath + "/val_image.txt"):
+      indices_train = get_indices('train')
+      indices_val = get_indices('val')
+      dataset.sfm.index_split = [
+        indices_train,
+        indices_val
+      ]
+    elif os.path.exists(os.path.join(dpath,'poses_bounds.npy')):
+      # original LLFF fallback split
       indices_total = list(range(len(dataset.imgs)))
       indices_val = indices_total[::8]
       indices_train = list(filter(lambda x: x not in indices_val, indices_total))
@@ -93,7 +100,6 @@ def prepareDataloaders(dataset, dpath, random_split=False, train_ratio=1, num_wo
     else:
       indices_train = get_indices('train')
       indices_val = get_indices('val')
-      # save indices to sfm for render propose
       dataset.sfm.index_split = [
         indices_train,
         indices_val

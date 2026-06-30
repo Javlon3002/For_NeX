@@ -22,7 +22,7 @@ from utils.load_llff import load_llff_data
 
 class SfMData:
   def __init__(self, dataset, ref_img='', scale=1, dmin=0,
-    dmax=0, invz=0, render_style='', offset=200):
+    dmax=0, invz=0, render_style='', offset=200, val_image_interval=5):
     self.scale = scale
     self.ref_cam = None
     self.ref_img = None
@@ -36,9 +36,10 @@ class SfMData:
     self.white_background = False #change background to white if transparent.
     self.index_split = [] #use for split dataset in blender
     self.offset = 200
+    self.val_image_interval = int(val_image_interval)
     # Detect dataset type
     can_hanle = self.readDeepview(dataset) \
-      or self.readLLFF(dataset, ref_img) \
+      or self.readLLFF(dataset, ref_img, self.val_image_interval) \
       or self.readColmap(dataset) 
     if not can_hanle:
       raise Exception('Unknow dataset type')
@@ -116,7 +117,7 @@ class SfMData:
       self.offset = offset
     print("dmin = %f, dmax = %f, invz = %d, offset = %d" % (self.dmin, self.dmax, self.invz, self.offset))
 
-  def readLLFF(self, dataset, ref_img = ""):
+  def readLLFF(self, dataset, ref_img = "", val_image_interval=5):
     """
     Read LLFF
     Parameters:
@@ -131,7 +132,7 @@ class SfMData:
     if not os.path.exists(image_dir) and not os.path.isdir(image_dir):
       return False
     # load R,T
-    train_poses, reference_depth, reference_view_id, render_poses, poses, intrinsic, self.webgl = load_llff_data(dataset,factor=None, split_train_val = 8, render_style = self.render_style)
+    train_poses, reference_depth, reference_view_id, render_poses, poses, intrinsic, self.webgl = load_llff_data(dataset, factor=None, split_train_val=val_image_interval, render_style=self.render_style)
     # get all image of this dataset
     images_path = [os.path.join('images', f) for f in sorted(os.listdir(image_dir))]
 
@@ -159,10 +160,9 @@ class SfMData:
 
     # if not set ref_cam, use LLFF ref_cam
     if ref_img == "":
-      # restore image id back from reference_view_id
-      # by adding missing validation index
-      image_id = reference_view_id + 1 #index 0 alway in validation set
-      image_id = image_id  + (image_id // 8) #every 8 will be validation set
+      # restore image id back from reference_view_id using dynamic validation interval
+      train_ids_all = [i for i in range(len(self.imgs)) if i % int(val_image_interval) != 0]
+      image_id = train_ids_all[reference_view_id]
       self.ref_cam = self.cams[0]
 
       self.ref_img = self.imgs[image_id] # here is reference view from train set

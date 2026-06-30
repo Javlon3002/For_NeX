@@ -74,6 +74,7 @@ parser.add_argument('-scale', type=float, default=-1, help='scale the MPI size')
 parser.add_argument('-llff_width', type=int, default=1008, help='if input dataset is LLFF it will resize the image to <llff_width>')
 parser.add_argument('-deepview_width', type=int, default=800, help='if input dataset is deepview dataset, it will resize the image to <deepview_width>')
 parser.add_argument('-train_ratio', type=float, default=0.875, help='ratio to split number of train/test (in case dataset doesn\'t specify how to split)')
+parser.add_argument('-val_image_interval', '--val_image_interval', type=int, default=5, help='validation split interval: zero-based image ids where id mod interval equals 0 are validation')
 parser.add_argument('-random_split', action='store_true', help='random split the train/test set. (in case dataset doesn\'t specify how to split)')
 parser.add_argument('-num_workers', type=int, default=8, help='number of pytorch\'s dataloader worker')
 parser.add_argument('-cv2resize', action='store_true', help='apply cv2.resize instead of skimage.transform.resize to match the score in our paper (see note in github readme for more detail) ')
@@ -536,6 +537,8 @@ def train():
 
   dpath = args.scene
 
+  writeIntervalSplitFiles(dpath, args.val_image_interval)
+
   dataset = loadDataset(dpath)
   sampler_train, sampler_val, dataloader_train, dataloader_val = prepareDataloaders(
     dataset,
@@ -726,6 +729,60 @@ def backupConfigAndCode(runpath):
   os.system("cp " + model_path + "/args.json " + model_path + "/args" + t + ".json")
 
 
+def writeIntervalSplitFiles(dpath, val_image_interval):
+  interval = int(val_image_interval)
+  if interval <= 1:
+    raise ValueError("val_image_interval must be >= 2")
+
+  img_dir = os.path.join(dpath, "images")
+  if not os.path.isdir(img_dir):
+    return
+
+  imgs = sorted([
+    f for f in os.listdir(img_dir)
+    if f.lower().endswith((".png", ".jpg", ".jpeg"))
+  ])
+
+  if len(imgs) == 0:
+    return
+
+  ids = list(range(len(imgs)))
+  val_ids = [i for i in ids if i % interval == 0]
+  train_ids = [i for i in ids if i % interval != 0]
+
+  if len(train_ids) == 0:
+    raise ValueError("Empty train split. Increase val_image_interval.")
+  if len(val_ids) == 0:
+    raise ValueError("Empty validation split.")
+
+  train_names = [imgs[i] for i in train_ids]
+  val_names = [imgs[i] for i in val_ids]
+
+  with open(os.path.join(dpath, "train_image.txt"), "w") as f:
+    f.write("\n".join(train_names) + "\n")
+
+  with open(os.path.join(dpath, "val_image.txt"), "w") as f:
+    f.write("\n".join(val_names) + "\n")
+
+  split_info = {
+    "val_image_interval": interval,
+    "val_split_rule": "start_from_first_image_zero_based_ids_mod_interval_eq_0",
+    "n_images": len(imgs),
+    "train_ids_0based": train_ids,
+    "val_ids_0based": val_ids,
+    "train_names": train_names,
+    "val_names": val_names,
+  }
+
+  with open(os.path.join(dpath, "split_info.json"), "w") as f:
+    json.dump(split_info, f, indent=2)
+
+  print("[SPLIT] interval={} total={} train={} val={}".format(
+    interval, len(imgs), len(train_ids), len(val_ids)
+  ))
+  print("[SPLIT] val_names={}".format(", ".join(val_names)))
+
+
 def loadDataset(dpath):
   # if dataset directory has only image, create LLFF poses
   colmapGenPoses(dpath)
@@ -743,7 +800,8 @@ def loadDataset(dpath):
                            invz=args.invz,
                            render_style=render_style,
                            offset=args.offset,
-                           cv2resize=args.cv2resize)
+                           cv2resize=args.cv2resize,
+                           val_image_interval=args.val_image_interval)
 
 
 if __name__ == "__main__":

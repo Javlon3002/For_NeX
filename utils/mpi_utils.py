@@ -28,7 +28,7 @@ import shutil
 class OrbiterDataset(Dataset):
   def __init__(self, dataset, ref_img, scale, dmin,
       dmax, invz, transform=None,
-      render_style='', offset=200, cv2resize=False):
+      render_style='', offset=200, cv2resize=False, val_image_interval=5):
     self.scale = scale
     self.dataset = dataset
     self.transform = transform
@@ -39,7 +39,8 @@ class OrbiterDataset(Dataset):
                        invz=invz,
                        scale=scale,
                        render_style=render_style,
-                       offset = offset)
+                       offset = offset,
+                       val_image_interval=val_image_interval)
 
     self.sfm.ref_rT = pt.from_numpy(self.sfm.ref_img['r']).t()
     self.sfm.ref_t = pt.from_numpy(self.sfm.ref_img['t'])

@@ -349,7 +349,8 @@ def load_llff_data(basedir, factor=8, recenter=True, bd_factor=.75, spherify=Fal
   else:
     # reference_view_id should stay in train set only
     validation_ids = np.arange(poses.shape[0])
-    validation_ids[::8] = -1
+    interval = int(split_train_val)
+    validation_ids[::interval] = -1
     validation_ids = validation_ids < 0
     train_ids = np.logical_not(validation_ids)
     train_poses = poses[train_ids]
