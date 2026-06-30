@@ -75,7 +75,11 @@ def load_colmap_data(realdir):
     LLFF assumes cx, cy to locate at the center of image (H/2, W/2)
     Whereas we get it from colmap prediction
   '''
-  camerasfile = os.path.join(realdir, 'dense/sparse/cameras.bin')
+  sparse_dir = os.path.join(realdir, 'dense/sparse')
+  if not os.path.exists(sparse_dir):
+    sparse_dir = os.path.join(realdir, 'sparse/0')
+
+  camerasfile = os.path.join(sparse_dir, 'cameras.bin')
   camdata = read_cameras_binary(camerasfile)
 
   # cam = camdata[camdata.keys()[0]]
@@ -86,7 +90,7 @@ def load_colmap_data(realdir):
 
   hwf_cxcy = np.array([h, w, fx, fy, cx, cy]).reshape([6,1])
 
-  imagesfile = os.path.join(realdir, 'dense/sparse/images.bin')
+  imagesfile = os.path.join(sparse_dir, 'images.bin')
   imdata = read_images_binary(imagesfile)
 
   w2c_mats = []
@@ -109,7 +113,7 @@ def load_colmap_data(realdir):
 
   #poses = np.concatenate([poses, np.tile(hwf[..., np.newaxis], [1,1,poses.shape[-1]])], 1)
 
-  points3dfile = os.path.join(realdir, 'dense/sparse/points3D.bin')
+  points3dfile = os.path.join(sparse_dir, 'points3D.bin')
   pts3d = read_points3d_binary(points3dfile)
 
   # must switch to [-u, r, -t] from [r, -u, t], NOT [r, u, -t]
@@ -155,7 +159,7 @@ def save_poses(basedir, poses, pts3d, perm, hwf_cxcy):
 
 def need_run_coolmap(basedir):
   files_needed = ['{}.bin'.format(f) for f in ['cameras', 'images', 'points3D']]
-  if os.path.exists(os.path.join(basedir, 'poses_bounds.npy') and os.path.join(basedir, 'hwf_cxcy.npy')):
+  if os.path.exists(os.path.join(basedir, 'poses_bounds.npy')) and os.path.exists(os.path.join(basedir, 'hwf_cxcy.npy')):
     return False
   if os.path.exists(os.path.join(basedir, 'sparse/0')):
     files_had = os.listdir(os.path.join(basedir, 'sparse/0'))
