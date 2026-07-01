@@ -982,7 +982,7 @@ def train():
       "latest_train_psnr": train_psnr,
     })
 
-    if epoch % args.tb_saveimage == 0 and args.tb_saveimage > 0:
+    if args.tb_saveimage > 0 and epoch % args.tb_saveimage == 0:
       with pt.no_grad():
         render = patch_render(model, dataset.sfm, feature, args.ray)
         Spec = getMPI(model, dataset.sfm, m = args.sublayers, dataloader = None)
