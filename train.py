@@ -19,7 +19,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.utils import save_image, make_grid
 from torch.utils.tensorboard import SummaryWriter
 
-import os, sys, json
+import os, sys, json, shutil, csv
 import numpy as np
 from skimage import io, transform
 from datetime import datetime
@@ -104,7 +104,7 @@ parser.add_argument('-nice_shiny', action='store_true', help="generate video tha
 
 
 #training utility
-parser.add_argument('-model_dir', type=str, default="scene", help='model (scene) directory which store in runs/<model_dir>/')
+parser.add_argument('-model_dir', type=str, default="scene", help='model (scene) directory stored in results/<model_dir>/')
 parser.add_argument('-pretrained', type=str, default="", help='location of checkpoint file, if not provide will use model_dir instead')
 parser.add_argument('-restart', action='store_true', help='delete old weight and retrain')
 parser.add_argument('-clean', action='store_true', help='delete old weight without start training process')
@@ -114,6 +114,268 @@ parser.add_argument('-clean', action='store_true', help='delete old weight witho
 parser.add_argument('-all_gpu',action='store_true',help="In multiple GPU training, We don't train MLP (data parallel) on the first GPU. This make training slower but we can utilize more VRAM on other GPU.")
 
 args = parser.parse_args()
+
+# =============================================================================
+# STANDARD EXPERIMENT LOGGING HELPERS
+# Logging-only patch. NeX model/training/rendering core is untouched.
+# =============================================================================
+
+METRICS_FIELDS = [
+  "timestamp",
+  "epoch",
+  "phase",
+  "train_loss_total",
+  "train_mse",
+  "train_psnr",
+  "lr",
+  "val_mean_mse",
+  "val_mean_psnr",
+  "val_mean_ssim",
+  "val_mean_lpips",
+  "is_best",
+]
+
+class TeeStream:
+  def __init__(self, *streams):
+    self.streams = streams
+
+  def write(self, data):
+    for stream in self.streams:
+      stream.write(data)
+      stream.flush()
+
+  def flush(self):
+    for stream in self.streams:
+      stream.flush()
+
+def nowIso():
+  return datetime.now().isoformat(timespec="seconds")
+
+def jsonDefault(obj):
+  if isinstance(obj, np.ndarray):
+    return obj.tolist()
+  if isinstance(obj, np.integer):
+    return int(obj)
+  if isinstance(obj, np.floating):
+    return float(obj)
+  if pt.is_tensor(obj):
+    if obj.numel() == 1:
+      return float(obj.detach().cpu().item())
+    return obj.detach().cpu().tolist()
+  return str(obj)
+
+def tensorToFloat(x):
+  if x == "":
+    return ""
+  if pt.is_tensor(x):
+    return float(x.detach().cpu().item())
+  if isinstance(x, np.generic):
+    return float(x)
+  return float(x)
+
+def psnrFromMse(mse):
+  mse = tensorToFloat(mse)
+  return float(-10.0 * np.log10(max(mse, 1e-12)))
+
+def getGitCommit():
+  try:
+    return os.popen("git rev-parse --short HEAD 2>/dev/null").read().strip()
+  except Exception:
+    return ""
+
+def expPaths(runpath):
+  exp_dir = os.path.join(runpath, args.model_dir)
+  return {
+    "exp_dir": exp_dir,
+    "checkpoints_dir": os.path.join(exp_dir, "checkpoints"),
+    "best_dir": os.path.join(exp_dir, "checkpoints", "best"),
+    "periodic_dir": os.path.join(exp_dir, "checkpoints", "periodic"),
+    "images_dir": os.path.join(exp_dir, "images"),
+    "logs_dir": os.path.join(exp_dir, "logs"),
+    "tensorboard_dir": os.path.join(exp_dir, "logs", "tensorboard"),
+    "config_path": os.path.join(exp_dir, "config.json"),
+    "run_info_path": os.path.join(exp_dir, "run_info.txt"),
+    "metrics_path": os.path.join(exp_dir, "metrics.csv"),
+    "summary_path": os.path.join(exp_dir, "logs", "summary.json"),
+    "terminal_log_path": os.path.join(exp_dir, "logs", "terminal_output.log"),
+    "last_ckpt": os.path.join(exp_dir, "checkpoints", "last.pt"),
+    "best_ckpt": os.path.join(exp_dir, "checkpoints", "best", "best.pt"),
+  }
+
+def ensureExperimentDirs(runpath):
+  paths = expPaths(runpath)
+  os.makedirs(paths["exp_dir"], exist_ok=True)
+  os.makedirs(paths["checkpoints_dir"], exist_ok=True)
+  os.makedirs(paths["best_dir"], exist_ok=True)
+  os.makedirs(paths["periodic_dir"], exist_ok=True)
+  os.makedirs(paths["images_dir"], exist_ok=True)
+  os.makedirs(paths["logs_dir"], exist_ok=True)
+  os.makedirs(paths["tensorboard_dir"], exist_ok=True)
+  return paths
+
+def setupTerminalLogging(paths):
+  if getattr(sys, "_nex_pipeline_tee_started", False):
+    return
+  log_f = open(paths["terminal_log_path"], "a", buffering=1)
+  sys.stdout = TeeStream(sys.__stdout__, log_f)
+  sys.stderr = TeeStream(sys.__stderr__, log_f)
+  sys._nex_pipeline_tee_started = True
+
+def readSplitInfo(dpath):
+  split_path = os.path.join(dpath, "split_info.json")
+  if os.path.exists(split_path):
+    with open(split_path, "r") as f:
+      return json.load(f)
+  return {}
+
+def appendMetricsRow(runpath, row):
+  paths = ensureExperimentDirs(runpath)
+  out = {k: row.get(k, "") for k in METRICS_FIELDS}
+  write_header = not os.path.exists(paths["metrics_path"])
+  with open(paths["metrics_path"], "a", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=METRICS_FIELDS)
+    if write_header:
+      writer.writeheader()
+    writer.writerow(out)
+
+def updateSummary(runpath, extra):
+  paths = ensureExperimentDirs(runpath)
+  summary = {}
+  if os.path.exists(paths["summary_path"]):
+    try:
+      with open(paths["summary_path"], "r") as f:
+        summary = json.load(f)
+    except Exception:
+      summary = {}
+
+  base = {
+    "experiment": args.model_dir,
+    "model_name": "NeX",
+    "branch": "nex_baseline",
+    "scene": os.path.basename(args.scene.rstrip("/")),
+    "scene_path": args.scene,
+    "val_image_interval": int(args.val_image_interval),
+    "git_commit": getGitCommit(),
+    "updated_at": nowIso(),
+  }
+  summary.update(base)
+  summary.update(extra)
+
+  with open(paths["summary_path"], "w") as f:
+    json.dump(summary, f, indent=2, sort_keys=True, default=jsonDefault)
+
+def writeConfigAndRunInfo(runpath, dataset, sampler_train, sampler_val, start_epoch):
+  paths = ensureExperimentDirs(runpath)
+  split_info = readSplitInfo(args.scene)
+
+  config = {
+    "experiment": args.model_dir,
+    "model_name": "NeX",
+    "branch": "nex_baseline",
+    "created_at": nowIso(),
+    "git_commit": getGitCommit(),
+    "user": getpass.getuser(),
+    "host": os.popen("hostname 2>/dev/null").read().strip(),
+    "command": " ".join(sys.argv),
+    "scene": os.path.basename(args.scene.rstrip("/")),
+    "scene_path": args.scene,
+    "args": vars(args),
+    "start_epoch": int(start_epoch),
+    "n_train_images": int(len(sampler_train)),
+    "n_val_images": int(len(sampler_val)),
+    "split_info": split_info,
+    "no_validation_leakage": True,
+    "logging_style": "pipeline_standard",
+    "output_structure": {
+      "checkpoints": "checkpoints/",
+      "best_checkpoint": "checkpoints/best/best.pt",
+      "last_checkpoint": "checkpoints/last.pt",
+      "periodic_checkpoints": "checkpoints/periodic/epoch_XXXX.pt",
+      "config": "config.json",
+      "images": "images/epoch_XXXX/",
+      "logs": "logs/",
+      "summary": "logs/summary.json",
+      "terminal_output": "logs/terminal_output.log",
+      "metrics": "metrics.csv",
+      "val_per_image_metrics": "val_per_image_metrics.csv",
+    },
+  }
+
+  with open(paths["config_path"], "w") as f:
+    json.dump(config, f, indent=2, sort_keys=True, default=jsonDefault)
+
+  with open(paths["run_info_path"], "w") as f:
+    f.write("experiment: {}\n".format(args.model_dir))
+    f.write("model_name: NeX\n")
+    f.write("branch: nex_baseline\n")
+    f.write("created_at: {}\n".format(config["created_at"]))
+    f.write("git_commit: {}\n".format(config["git_commit"]))
+    f.write("user: {}\n".format(config["user"]))
+    f.write("host: {}\n".format(config["host"]))
+    f.write("scene: {}\n".format(args.scene))
+    f.write("command: {}\n".format(config["command"]))
+    f.write("val_image_interval: {}\n".format(args.val_image_interval))
+    f.write("n_train_images: {}\n".format(config["n_train_images"]))
+    f.write("n_val_images: {}\n".format(config["n_val_images"]))
+    f.write("val_names: {}\n".format(", ".join(split_info.get("val_names", []))))
+
+  updateSummary(runpath, {
+    "status": "initialized",
+    "pipeline_complete": False,
+    "n_train_images": config["n_train_images"],
+    "n_val_images": config["n_val_images"],
+    "val_names": split_info.get("val_names", []),
+    "best_epoch": None,
+    "best_val_mean_psnr": None,
+    "best_val_mean_ssim": None,
+    "best_val_mean_lpips": None,
+  })
+
+def recordValidation(runpath, model, optimizer, epoch, val_metrics, best_state):
+  if val_metrics is None:
+    return best_state
+
+  paths = ensureExperimentDirs(runpath)
+
+  val_mse = val_metrics.get("MSE", "")
+  val_psnr = val_metrics.get("PSNR", "")
+  val_ssim = val_metrics.get("SSIM", "")
+  val_lpips = val_metrics.get("LPIPS", "")
+
+  is_best = False
+  if val_psnr != "":
+    val_psnr_f = tensorToFloat(val_psnr)
+    if val_psnr_f > best_state["best_val_mean_psnr"]:
+      is_best = True
+      best_state["best_val_mean_psnr"] = val_psnr_f
+      best_state["best_epoch"] = int(epoch)
+      checkpoint(paths["best_ckpt"], model, optimizer, int(epoch))
+
+  appendMetricsRow(runpath, {
+    "timestamp": nowIso(),
+    "epoch": int(epoch) if isinstance(epoch, int) else epoch,
+    "phase": "val",
+    "val_mean_mse": tensorToFloat(val_mse) if val_mse != "" else "",
+    "val_mean_psnr": tensorToFloat(val_psnr) if val_psnr != "" else "",
+    "val_mean_ssim": tensorToFloat(val_ssim) if val_ssim != "" else "",
+    "val_mean_lpips": tensorToFloat(val_lpips) if val_lpips != "" else "",
+    "is_best": int(is_best),
+  })
+
+  updateSummary(runpath, {
+    "status": "running",
+    "latest_eval_epoch": int(epoch) if isinstance(epoch, int) else epoch,
+    "latest_val_mean_mse": tensorToFloat(val_mse) if val_mse != "" else "",
+    "latest_val_mean_psnr": tensorToFloat(val_psnr) if val_psnr != "" else "",
+    "latest_val_mean_ssim": tensorToFloat(val_ssim) if val_ssim != "" else "",
+    "latest_val_mean_lpips": tensorToFloat(val_lpips) if val_lpips != "" else "",
+    "best_epoch": best_state["best_epoch"],
+    "best_val_mean_psnr": best_state["best_val_mean_psnr"],
+    "best_val_mean_ssim": tensorToFloat(val_ssim) if is_best and val_ssim != "" else None,
+    "best_val_mean_lpips": tensorToFloat(val_lpips) if is_best and val_lpips != "" else None,
+  })
+
+  return best_state
 
 def computeHomographies(sfm, feature, planes):
   fx = feature['fx'][0]
@@ -486,10 +748,13 @@ def generateAlpha(model, dataset, dataloader, writer, runpath, suffix="", datalo
   ''' Prediction
     Args.
       model.   --> trained model
-      dataset. --> valiade dataset
+      dataset. --> validation dataset
       writer.  --> tensorboard
   '''
   suffix_str = "/%06d" % suffix if isinstance(suffix, int) else "/"+str(suffix)
+  epoch_label = "epoch_%04d" % suffix if isinstance(suffix, int) else str(suffix if suffix != "" else "final")
+  eval_epoch = suffix if isinstance(suffix, int) else epoch_label
+
   # create webgl only when using -predict or finish training
   if not args.no_webgl and suffix =="":
     info = getMPI(model, dataset.sfm, dataloader = dataloader_train)
@@ -505,17 +770,22 @@ def generateAlpha(model, dataset, dataloader, writer, runpath, suffix="", datalo
                    webpath=args.web_path,
                    web_width= args.web_width)
 
+  out = None
   if not args.no_eval and len(dataloader) > 0:
     out = evaluation(model,
                      dataset,
                      dataloader,
                      args.ray,
-                     runpath + args.model_dir + suffix_str,
-                     webpath=args.eval_path,
-                     write_csv = not args.no_csv)
+                     os.path.join(runpath, args.model_dir),
+                     webpath=runpath,
+                     write_csv = not args.no_csv,
+                     epoch = eval_epoch,
+                     epoch_label = epoch_label,
+                     split_info = readSplitInfo(args.scene))
     if writer is not None and isinstance(suffix, int):
       for metrics, score in out.items():
         writer.add_scalar('METRICS/{}'.format(metrics), score, suffix)
+  return out
 
 
 def setLearningRate(optimizer, epoch):
@@ -530,10 +800,24 @@ def train():
   pt.manual_seed(1)
   np.random.seed(1)
 
+  runpath = "results/"
+
   if args.restart or args.clean:
-    os.system("rm -rf " + "runs/" + args.model_dir)
+    shutil.rmtree(os.path.join(runpath, args.model_dir), ignore_errors=True)
   if args.clean:
     exit()
+
+  paths = ensureExperimentDirs(runpath)
+  setupTerminalLogging(paths)
+
+  print("================================================================================")
+  print("NeX PIPELINE-STANDARD RUN")
+  print("================================================================================")
+  print("experiment:", args.model_dir)
+  print("scene:", args.scene)
+  print("output:", paths["exp_dir"])
+  print("command:", " ".join(sys.argv))
+  print("================================================================================")
 
   dpath = args.scene
 
@@ -568,12 +852,15 @@ def train():
     optimizer = pt.optim.Adam(model.parameters(), lr=0)
 
   start_epoch = 0
-  runpath = "runs/"
-  ckpt = runpath + args.model_dir + "/ckpt.pt"
+  paths = ensureExperimentDirs(runpath)
+  ckpt = paths["last_ckpt"]
   if os.path.exists(ckpt):
     start_epoch = loadFromCheckpoint(ckpt, model, optimizer)
   elif args.pretrained != "":
-    start_epoch = loadFromCheckpoint(runpath + args.pretrained + "/ckpt.pt", model, optimizer)
+    pretrained_ckpt = os.path.join(runpath, args.pretrained, "checkpoints", "last.pt")
+    if not os.path.exists(pretrained_ckpt):
+      pretrained_ckpt = os.path.join("runs", args.pretrained, "ckpt.pt")
+    start_epoch = loadFromCheckpoint(pretrained_ckpt, model, optimizer)
 
   step = start_epoch * len(sampler_train)
 
@@ -606,10 +893,17 @@ def train():
     exit()
 
 
-  backupConfigAndCode(runpath)
+  backupConfigAndCode(runpath, dataset, sampler_train, sampler_val, start_epoch)
   ts = TrainingStatus(num_steps=args.epochs * len(sampler_train))
-  writer = SummaryWriter(runpath + args.model_dir)
+  writer = SummaryWriter(paths["tensorboard_dir"])
   writer.add_text('command',' '.join(sys.argv), 0)
+  best_state = {"best_val_mean_psnr": -1e30, "best_epoch": None}
+  updateSummary(runpath, {
+    "status": "running",
+    "pipeline_complete": False,
+    "start_epoch": int(start_epoch),
+    "total_epochs": int(args.epochs),
+  })
   ts.tic()
 
    # shift by 1 epoch to save last epoch to tensorboard
@@ -661,8 +955,32 @@ def train():
       if step % args.tb_toc == 0:  print(toc_msg)
       ts.tic()
 
-    writer.add_scalar('loss/total', epoch_loss_total/len(sampler_train), epoch)
-    writer.add_scalar('loss/mse', epoch_mse/len(sampler_train), epoch)
+    avg_loss_total = epoch_loss_total / len(sampler_train)
+    avg_mse = epoch_mse / len(sampler_train)
+    train_psnr = psnrFromMse(avg_mse)
+
+    writer.add_scalar('loss/total', avg_loss_total, epoch)
+    writer.add_scalar('loss/mse', avg_mse, epoch)
+    writer.add_scalar('loss/train_psnr', train_psnr, epoch)
+
+    appendMetricsRow(runpath, {
+      "timestamp": nowIso(),
+      "epoch": int(epoch),
+      "phase": "train",
+      "train_loss_total": tensorToFloat(avg_loss_total),
+      "train_mse": tensorToFloat(avg_mse),
+      "train_psnr": train_psnr,
+      "lr": float(optimizer.param_groups[0]["lr"]),
+    })
+
+    updateSummary(runpath, {
+      "status": "running",
+      "latest_epoch": int(epoch),
+      "latest_step": int(step),
+      "latest_train_loss_total": tensorToFloat(avg_loss_total),
+      "latest_train_mse": tensorToFloat(avg_mse),
+      "latest_train_psnr": train_psnr,
+    })
 
     if epoch % args.tb_saveimage == 0 and args.tb_saveimage > 0:
       with pt.no_grad():
@@ -679,7 +997,8 @@ def train():
         pt.cuda.empty_cache()
 
     if epoch % args.tb_savempi == 0 and args.tb_savempi > 0 and epoch > 0:
-      generateAlpha(model, dataset, dataloader_val, writer, runpath, epoch)
+      val_metrics = generateAlpha(model, dataset, dataloader_val, writer, runpath, epoch)
+      best_state = recordValidation(runpath, model, optimizer, epoch, val_metrics, best_state)
       pt.cuda.empty_cache()
 
     var = pt.mean(pt.std(model.illumination, 2)** 2)
@@ -690,17 +1009,38 @@ def train():
     if (epoch+1) % args.checkpoint == 0 or epoch == args.epochs-1:
       if np.isnan(loss_total.item()):
         exit()
-      checkpoint(ckpt, model, optimizer, epoch+1)
+      save_epoch = epoch + 1
+      checkpoint(paths["last_ckpt"], model, optimizer, save_epoch)
+      periodic_path = os.path.join(paths["periodic_dir"], "epoch_%04d.pt" % save_epoch)
+      checkpoint(periodic_path, model, optimizer, save_epoch)
 
   print('Finished Training')
-  generateAlpha(model, dataset, dataloader_val, None, runpath, dataloader_train = dataloader_train)
+
+  if not (args.tb_savempi > 0 and args.epochs % args.tb_savempi == 0):
+    val_metrics = generateAlpha(model, dataset, dataloader_val, None, runpath, args.epochs, dataloader_train = dataloader_train)
+    best_state = recordValidation(runpath, model, optimizer, args.epochs, val_metrics, best_state)
+
+  checkpoint(paths["last_ckpt"], model, optimizer, args.epochs)
+
+  updateSummary(runpath, {
+    "status": "finished",
+    "pipeline_complete": True,
+    "finished_at": nowIso(),
+    "final_epoch": int(args.epochs),
+    "best_epoch": best_state["best_epoch"],
+    "best_val_mean_psnr": best_state["best_val_mean_psnr"] if best_state["best_epoch"] is not None else None,
+  })
+
+  writer.close()
+
   if not args.no_video:
-    render_video(model, dataset, args.ray, os.path.join(runpath, 'video_output', args.model_dir))
+    render_video(model, dataset, args.ray, os.path.join(runpath, args.model_dir, 'video_output'))
   if args.http:
     serve_files(args.model_dir, args.web_path)
 
 def checkpoint(file, model, optimizer, epoch):
-  print("Checkpointing Model @ Epoch %d ..." % epoch)
+  os.makedirs(os.path.dirname(file), exist_ok=True)
+  print("Checkpointing Model @ Epoch %d -> %s ..." % (epoch, file))
   pt.save({
     'epoch': epoch,
     'model_state_dict': model.state_dict(),
@@ -715,18 +1055,10 @@ def loadFromCheckpoint(file, model, optimizer):
   print("Loading %s Model @ Epoch %d" % (args.pretrained, start_epoch))
   return start_epoch
 
-def backupConfigAndCode(runpath):
+def backupConfigAndCode(runpath, dataset=None, sampler_train=None, sampler_val=None, start_epoch=0):
   if args.predict or args.clean:
     return
-  model_path = os.path.join(runpath, args.model_dir)
-  os.makedirs(model_path, exist_ok = True)
-  now = datetime.now()
-  t = now.strftime("_%Y_%m_%d_%H:%M:%S")
-  with open(model_path + "/args.json", 'w') as out:
-    json.dump(vars(args), out, indent=2, sort_keys=True)
-  os.system("cp " + os.path.abspath(__file__) + " " + model_path + "/")
-  os.system("cp " + os.path.abspath(__file__) + " " + model_path + "/" + __file__.replace(".py", t + ".py"))
-  os.system("cp " + model_path + "/args.json " + model_path + "/args" + t + ".json")
+  writeConfigAndRunInfo(runpath, dataset, sampler_train, sampler_val, start_epoch)
 
 
 def writeIntervalSplitFiles(dpath, val_image_interval):

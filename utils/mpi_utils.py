@@ -275,21 +275,38 @@ def outputCompactMPI(mpi_reflection, sfm, planes, model_dir_nolp, layers, sublay
           "sharedrgb", exls, maxcol, offset, layers, sublayers)
     print("WebGL saved to {}".format(webpath + outputFile))
 
-def evaluation(model, dataset, dataloader, ray, model_dir_nolp, webpath = 'runs/html/', write_csv = True):
-  outputFile = "/".join(model_dir_nolp.split("/")[1:])
+def evaluation(model, dataset, dataloader, ray, model_dir_nolp, webpath = 'results/', write_csv = True, epoch = "", epoch_label = "final", split_info = None):
+  exp_dir = model_dir_nolp
+  images_dir = os.path.join(exp_dir, "images", epoch_label)
+  os.makedirs(images_dir, exist_ok=True)
 
-  info_dict = measurement(model, dataset.sfm, dataloader, ray, webpath + outputFile + '/rendered_val')
+  info_dict = measurement(model, dataset.sfm, dataloader, ray, images_dir, epoch, split_info)
   df = pd.DataFrame.from_dict(info_dict)
+
+  if "val_image_index" in df.columns:
+    df = df.sort_values("val_image_index").reset_index(drop=True)
+
+  metric_cols = ["mse", "psnr", "ssim", "lpips"]
 
   print("===================================")
   print("Measurement Result")
   print("===================================")
   print(df.to_string(index=False))
   print("-----------------------------------")
-  print(df.mean().to_string())
+  print(df[metric_cols].mean().to_string())
+
   if write_csv:
-    df.to_csv(webpath + outputFile +'/ssim_psnr.csv', index=False)
-  return df.mean().to_dict()
+    csv_path = os.path.join(exp_dir, "val_per_image_metrics.csv")
+    write_header = not os.path.exists(csv_path)
+    df.to_csv(csv_path, mode="a", header=write_header, index=False)
+
+  means = df[metric_cols].mean().to_dict()
+  return {
+    "MSE": float(means["mse"]),
+    "PSNR": float(means["psnr"]),
+    "SSIM": float(means["ssim"]),
+    "LPIPS": float(means["lpips"]),
+  }
 
 def render_video(model, dataset, ray, video_path = 'runs/video/', render_type='default', dataloader = None):
   print("render_video: {}".format(render_type))
@@ -381,43 +398,89 @@ def patch_render(model, sfm, feature, ray):
     out = predicted_image.view(gt.shape[0], gt.shape[1], gt.shape[2], gt.shape[3])
   return out
 
-def measurement(model, sfm, dataloader, ray, write_path = ''):
+def measurement(model, sfm, dataloader, ray, write_path = '', epoch = "", split_info = None):
   """ calculate PSNR/SSIM and LPIPS"""
   psnrs = []
   ssims = []
   lpipss = []
+  mses = []
   filenames = []
+  epochs = []
+  val_image_indices = []
+  original_frame_indices_0based = []
+  original_frame_indices_1based = []
+
+  split_info = split_info or {}
+  val_names = split_info.get("val_names", [])
+  val_ids = split_info.get("val_ids_0based", [])
+
   if write_path != '':
     os.makedirs(write_path,exist_ok=True)
+
   lpips_model = lpips.LPIPS(net='vgg')
+
   for i, feature in enumerate(dataloader):
     gt = feature['image'] # "ground-truth"
     predict_image = patch_render(model, sfm, feature, ray)
 
-    # calculate LPIPS. It's require to change image range from [0,1] to [-1,1]
+    # calculate LPIPS. It requires changing image range from [0,1] to [-1,1]
     gt_lpips = gt.clone().cpu() * 2.0 - 1.0
     predict_image_lpips = predict_image.clone().detach().cpu() * 2.0 - 1.0
     lpips_result = lpips_model.forward(predict_image_lpips, gt_lpips).cpu().detach().numpy()
     lpipss.append(np.squeeze(lpips_result))
-    # calculate PSNR/SSIM
+
+    # calculate PSNR/SSIM/MSE
     predict_image = predict_image.permute(0, 2, 3, 1).cpu().detach().numpy()[0]
     gt = gt.permute(0, 2, 3, 1).numpy()[0]
-    ssims.append(structural_similarity(predict_image, gt, win_size=11, multichannel=True, gaussian_weights=True))
-    psnrs.append(peak_signal_noise_ratio(predict_image, gt, data_range=1.0))
 
-    # save output image
-    filename = '_'.join(feature['path'][0].split('/'))
-    filenames.append(filename)
+    mse = float(np.mean((predict_image - gt) ** 2))
+    ssim = structural_similarity(predict_image, gt, win_size=11, multichannel=True, gaussian_weights=True)
+    psnr = peak_signal_noise_ratio(predict_image, gt, data_range=1.0)
+
+    mses.append(mse)
+    ssims.append(ssim)
+    psnrs.append(psnr)
+
+    image_name = os.path.basename(feature['path'][0])
+    stem = os.path.splitext(image_name)[0]
+
+    if image_name in val_names:
+      val_idx = val_names.index(image_name)
+      frame_0based = int(val_ids[val_idx]) if val_idx < len(val_ids) else val_idx
+    else:
+      val_idx = i
+      frame_0based = i
+
+    frame_1based = frame_0based + 1
+
+    epochs.append(epoch)
+    val_image_indices.append(val_idx)
+    original_frame_indices_0based.append(frame_0based)
+    original_frame_indices_1based.append(frame_1based)
+    filenames.append(image_name)
+
+    # save output images in pipeline-standard naming
     if write_path != '':
-      filename = '{}.png'.format('.'.join(filename.split('.')[:-1]))
-      io.imsave(os.path.join(write_path, '{}_ours.png'.format(filename)), (predict_image * 255).astype(np.uint8))
-      io.imsave(os.path.join(write_path, '{}_gt.png'.format(filename)), (gt * 255).astype(np.uint8))
+      prefix = "val_%02d_frame_%04d_%s" % (val_idx, frame_1based, stem)
+
+      error = np.mean(np.abs(predict_image - gt), axis=2)
+      error = np.clip(error * 4.0, 0.0, 1.0)
+      error_rgb = np.repeat(error[:, :, None], 3, axis=2)
+
+      io.imsave(os.path.join(write_path, prefix + "_pred.png"), (np.clip(predict_image, 0.0, 1.0) * 255).astype(np.uint8))
+      io.imsave(os.path.join(write_path, prefix + "_gt.png"), (np.clip(gt, 0.0, 1.0) * 255).astype(np.uint8))
+      io.imsave(os.path.join(write_path, prefix + "_error.png"), (error_rgb * 255).astype(np.uint8))
       
   return {
-    'name': filenames,
-    'PSNR': psnrs,
-    'SSIM': ssims,
-    'LPIPS': lpipss
+    'epoch': epochs,
+    'val_image_index': val_image_indices,
+    'original_frame_index_0based': original_frame_indices_0based,
+    'original_frame_index_1based': original_frame_indices_1based,
+    'image_name': filenames,
+    'mse': mses,
+    'psnr': psnrs,
+    'ssim': ssims,
+    'lpips': lpipss
   }
 
 def getPlanes(sfm, n):
