@@ -907,7 +907,7 @@ def train():
   ts.tic()
 
    # shift by 1 epoch to save last epoch to tensorboard
-  for epoch in range(start_epoch, args.epochs+1):
+  for epoch in range(start_epoch + 1, args.epochs + 1):
     epoch_loss_total = 0
     epoch_mse = 0
 
@@ -1006,10 +1006,10 @@ def train():
     writer.add_scalar('loss/illumination_mean', mean, epoch)
     writer.add_scalar('loss/illumination_var', var, epoch)
 
-    if (epoch+1) % args.checkpoint == 0 or epoch == args.epochs-1:
+    if epoch % args.checkpoint == 0 or epoch == args.epochs:
       if np.isnan(loss_total.item()):
         exit()
-      save_epoch = epoch + 1
+      save_epoch = epoch
       checkpoint(paths["last_ckpt"], model, optimizer, save_epoch)
       periodic_path = os.path.join(paths["periodic_dir"], "epoch_%04d.pt" % save_epoch)
       checkpoint(periodic_path, model, optimizer, save_epoch)

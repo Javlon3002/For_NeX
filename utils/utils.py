@@ -181,10 +181,11 @@ class TrainingStatus:
       barText = "Command: CUDA_VISIBLE_DEVICES=%s python %s" % (os.environ['CUDA_VISIBLE_DEVICES'], self.statusbar)
     else:
       barText = "Command: python %s" % (self.statusbar)
-    try:
-      drawBottomBar(barText)
-    except:
-      pass #skip bottombar if it no output
+    if os.environ.get("NEX_DISABLE_BOTTOM_BAR", "0") != "1":
+      try:
+        drawBottomBar(barText)
+      except:
+        pass # skip bottombar if it no output
     return msg
 
 # use in render_depth
