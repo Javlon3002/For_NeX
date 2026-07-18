@@ -1,0 +1,219 @@
+================================================================================
+SAFE GENERATE NeX METADATA FROM FIXED COLMAP
+================================================================================
+DATE: Sun Jul  5 14:28:09 CEST 2026
+PWD: /home/vivekfei/EXP/NeX
+PYTHON: /home/vivekfei/miniconda3/envs/nex/bin/python
+Python 3.8.19
+LOG: /home/vivekfei/EXP/NeX/logs/SAFE_GENERATE_METADATA_FIXED_COLMAP_20260705_142809.log
+
+================================================================================
+1) MOVE ANY PARTIAL OLD METADATA OUT OF dataset/
+================================================================================
+No partial metadata files found. Dataset was clean.
+
+================================================================================
+2) GENERATE poses_bounds.npy + hwf_cxcy.npy + train/val split
+================================================================================
+EXPECTED FORMAT:
+  poses_bounds.npy shape = (N, 14)
+  hwf_cxcy.npy shape     = (6, 1) or (6,)
+  split rule             = zero-based image index % 5 == 0 goes to validation
+
+================================================================================
+CanClip
+================================================================================
+images=30
+sparse_dir=dataset/CanClip/dense/sparse
+Images # 30
+Points (2206, 3) Visibility (2206, 30)
+Depth stats 8.563991244953979 53.4357730920806 28.3363073247724
+poses_bounds.npy=OK shape=(30, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[543.0, 970.0, 1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+train_image.txt=OK count=24
+val_image.txt=OK count=6
+val_names=img001.png, img006.png, img011.png, img016.png, img021.png, img026.png
+STATUS=READY
+================================================================================
+flower
+================================================================================
+images=34
+sparse_dir=dataset/flower/dense/sparse
+Images # 34
+Points (29452, 3) Visibility (29452, 34)
+Depth stats 1.3770078785896382 287.9377618441879 72.08606190918466
+poses_bounds.npy=OK shape=(34, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[748.0, 998.0, 865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+train_image.txt=OK count=27
+val_image.txt=OK count=7
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG
+STATUS=READY
+================================================================================
+fortress
+================================================================================
+images=42
+sparse_dir=dataset/fortress/dense/sparse
+Images # 42
+Points (38521, 3) Visibility (38521, 42)
+Depth stats 1.568427728648825 178.33999263423246 24.217915163284115
+poses_bounds.npy=OK shape=(42, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[753.0, 1004.0, 847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+train_image.txt=OK count=33
+val_image.txt=OK count=9
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+STATUS=READY
+================================================================================
+horns
+================================================================================
+images=62
+sparse_dir=dataset/horns/dense/sparse
+Images # 62
+Points (28093, 3) Visibility (28093, 62)
+Depth stats 0.8368250752447652 327.6532350295818 40.3864890616577
+poses_bounds.npy=OK shape=(62, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[753.0, 1004.0, 836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+train_image.txt=OK count=49
+val_image.txt=OK count=13
+val_names=img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg, img056.jpg, img061.jpg
+STATUS=READY
+================================================================================
+Ollie
+================================================================================
+images=40
+sparse_dir=dataset/Ollie/dense/sparse
+Images # 40
+Points (6697, 3) Visibility (6697, 40)
+Depth stats 3.213565178913748 102.54811620031192 18.199394075586117
+poses_bounds.npy=OK shape=(40, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[541.0, 967.0, 1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+train_image.txt=OK count=32
+val_image.txt=OK count=8
+val_names=img001.png, img006.png, img011.png, img016.png, img021.png, img026.png, img031.png, img036.png
+STATUS=READY
+================================================================================
+room
+================================================================================
+images=41
+sparse_dir=dataset/room/dense/sparse
+Images # 41
+Points (6111, 3) Visibility (6111, 41)
+Depth stats 1.8733071648971973 289.0173766224379 32.44531174723381
+poses_bounds.npy=OK shape=(41, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[746.0, 996.0, 769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+train_image.txt=OK count=32
+val_image.txt=OK count=9
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+STATUS=READY
+================================================================================
+trex
+================================================================================
+images=55
+sparse_dir=dataset/trex/dense/sparse
+Images # 55
+Points (24605, 3) Visibility (24605, 55)
+Depth stats 0.8700784916698167 239.9170460047498 47.900870176984384
+poses_bounds.npy=OK shape=(55, 14)
+hwf_cxcy.npy=OK shape=(6, 1) values=[751.0, 1002.0, 833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+train_image.txt=OK count=44
+val_image.txt=OK count=11
+val_names=img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg
+STATUS=READY
+
+================================================================================
+FINAL SUMMARY
+================================================================================
+ALL_SCENES_READY
+
+================================================================================
+3) FINAL FILE CHECK
+================================================================================
+
+=== CanClip ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 3.5K Jul  5 14:28 dataset/CanClip/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/CanClip/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 264 Jul  5 14:28 dataset/CanClip/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 66 Jul  5 14:28 dataset/CanClip/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1006 Jul  5 14:28 dataset/CanClip/split_info.json
+
+=== flower ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 3.9K Jul  5 14:28 dataset/flower/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/flower/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 297 Jul  5 14:28 dataset/flower/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 77 Jul  5 14:28 dataset/flower/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.1K Jul  5 14:28 dataset/flower/split_info.json
+
+=== fortress ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 4.8K Jul  5 14:28 dataset/fortress/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/fortress/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 363 Jul  5 14:28 dataset/fortress/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 99 Jul  5 14:28 dataset/fortress/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.3K Jul  5 14:28 dataset/fortress/split_info.json
+
+=== horns ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 7.0K Jul  5 14:28 dataset/horns/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/horns/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 539 Jul  5 14:28 dataset/horns/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 143 Jul  5 14:28 dataset/horns/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.8K Jul  5 14:28 dataset/horns/split_info.json
+
+=== Ollie ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 4.5K Jul  5 14:28 dataset/Ollie/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/Ollie/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 352 Jul  5 14:28 dataset/Ollie/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 88 Jul  5 14:28 dataset/Ollie/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.3K Jul  5 14:28 dataset/Ollie/split_info.json
+
+=== room ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 4.7K Jul  5 14:28 dataset/room/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/room/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 352 Jul  5 14:28 dataset/room/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 99 Jul  5 14:28 dataset/room/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.3K Jul  5 14:28 dataset/room/split_info.json
+
+=== trex ===
+poses_bounds.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 6.2K Jul  5 14:28 dataset/trex/poses_bounds.npy
+hwf_cxcy.npy=OK
+-rw-rw-r-- 1 vivekfei vivekfei 176 Jul  5 14:28 dataset/trex/hwf_cxcy.npy
+train_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 484 Jul  5 14:28 dataset/trex/train_image.txt
+val_image.txt=OK
+-rw-rw-r-- 1 vivekfei vivekfei 121 Jul  5 14:28 dataset/trex/val_image.txt
+split_info.json=OK
+-rw-rw-r-- 1 vivekfei vivekfei 1.7K Jul  5 14:28 dataset/trex/split_info.json
+
+================================================================================
+DONE - TERMINAL SHOULD STAY OPEN EVEN IF THERE WAS AN ERROR
+================================================================================
+LOG:
+/home/vivekfei/EXP/NeX/logs/SAFE_GENERATE_METADATA_FIXED_COLMAP_20260705_142809.log

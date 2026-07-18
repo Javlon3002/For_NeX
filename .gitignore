@@ -1,7 +1,7 @@
+# Generated experiment results
+results/
+
+# Python cache
+__pycache__/
 *.pyc
-data/
-runs/
-command/
-.vscode/
-.pytest_cache
-*.sub
+*.pyo

@@ -1,0 +1,525 @@
+]633;E;echo "================================================================================";952ae037-6b2b-45da-9a30-87d951d5b621]633;C================================================================================
+NEX 0007 FULL AUDIT
+================================================================================
+DATE: Fri Jul  3 11:20:49 CEST 2026
+HOST: login02
+PWD: /home/vivekfei/EXP/NeX
+
+================================================================================
+GIT
+================================================================================
+d501d49 (HEAD -> main) PATCH 3c: fix epoch counting, checkpoint labels, and terminal logging
+1069af6 PATCH 3b: allow tb_saveimage 0 without crash
+cc74cdf PATCH 3: standardize NeX experiment logging
+12b4799 (tag: nex-val5-loader-ready-v1) PATCH 2: make validation image interval configurable
+9b55130 PATCH 1: support sparse COLMAP data and add dataset prep tools
+7ae74d1 BASE: original untouched NeX code
+
+
+================================================================================
+RESULT FOLDERS
+================================================================================
+results/0007_CanClip_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_flower_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_fortress_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_horns_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_Ollie_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_room_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_trex_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+
+================================================================================
+DISK USAGE
+================================================================================
+189G	results
+25G	results/0007_CanClip_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+30G	results/0007_flower_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+30G	results/0007_fortress_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+31G	results/0007_horns_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+25G	results/0007_Ollie_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+30G	results/0007_room_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+23G	results/0007_trex_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+
+====================================================================================================
+FOUND EXPERIMENTS
+====================================================================================================
+count=7
+results/0007_CanClip_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_Ollie_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_flower_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_fortress_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_horns_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_room_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+results/0007_trex_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+
+====================================================================================================
+SCENE: CanClip
+====================================================================================================
+experiment: 0007_CanClip_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-02T00:08:31
+finished_at: 2026-07-02T03:27:36
+updated_at: 2026-07-02T03:27:36
+duration_hours: 3.318
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=24 n_val=6
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=7200 expected_step=7200
+
+METRICS:
+  best_epoch=235
+  best_psnr=19.2305 best_ssim= best_lpips=
+  final_psnr=19.0144 final_ssim=0.8842 final_lpips=0.4139
+  latest metrics.csv val row: epoch=300 psnr=19.01438764179984 ssim=0.8842491382728627 lpips=0.413918137550354
+  best metrics.csv val row: epoch=235 psnr=19.23050789300117 ssim=0.8872413710291708 lpips=0.4087302287419637
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=360 expected_full=360 expected_observed=360
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.png, img006.png, img011.png, img016.png, img021.png, img026.png
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: Ollie
+====================================================================================================
+experiment: 0007_Ollie_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-02T20:36:31
+finished_at: 2026-07-03T00:53:32
+updated_at: 2026-07-03T00:53:32
+duration_hours: 4.284
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=32 n_val=8
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=9600 expected_step=9600
+
+METRICS:
+  best_epoch=255
+  best_psnr=21.2239 best_ssim= best_lpips=
+  final_psnr=21.1739 final_ssim=0.8933 final_lpips=0.5722
+  latest metrics.csv val row: epoch=300 psnr=21.17394707734156 ssim=0.8932564888785461 lpips=0.5721665024757385
+  best metrics.csv val row: epoch=255 psnr=21.223929767435443 ssim=0.8950299695646904 lpips=0.5729259252548218
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=480 expected_full=480 expected_observed=480
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.png, img006.png, img011.png, img016.png, img021.png, img026.png, img031.png, img036.png
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: flower
+====================================================================================================
+experiment: 0007_flower_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-02T03:27:51
+finished_at: 2026-07-02T07:25:06
+updated_at: 2026-07-02T07:25:06
+duration_hours: 3.954
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=27 n_val=7
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=8100 expected_step=8100
+
+METRICS:
+  best_epoch=295
+  best_psnr=19.1165 best_ssim= best_lpips=
+  final_psnr=18.9962 final_ssim=0.6777 final_lpips=0.5544
+  latest metrics.csv val row: epoch=300 psnr=18.996204249584803 ssim=0.677738300863889 lpips=0.5543631485530308
+  best metrics.csv val row: epoch=295 psnr=19.116530208385708 ssim=0.6787856954665206 lpips=0.5539272853306362
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=420 expected_full=420 expected_observed=420
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: fortress
+====================================================================================================
+experiment: 0007_fortress_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-02T07:25:20
+finished_at: 2026-07-02T12:57:40
+updated_at: 2026-07-02T12:57:40
+duration_hours: 5.539
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=33 n_val=9
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=9900 expected_step=9900
+
+METRICS:
+  best_epoch=145
+  best_psnr=20.3092 best_ssim= best_lpips=
+  final_psnr=20.0023 final_ssim=0.7341 final_lpips=0.6214
+  latest metrics.csv val row: epoch=300 psnr=20.002338142099703 ssim=0.7340859542323727 lpips=0.6213541560702853
+  best metrics.csv val row: epoch=145 psnr=20.30916606727239 ssim=0.7368005620194236 lpips=0.6250345971849229
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=540 expected_full=540 expected_observed=540
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: horns
+====================================================================================================
+experiment: 0007_horns_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-02T12:58:12
+finished_at: 2026-07-02T20:36:07
+updated_at: 2026-07-02T20:36:07
+duration_hours: 7.632
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=49 n_val=13
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=14700 expected_step=14700
+
+METRICS:
+  best_epoch=295
+  best_psnr=17.0665 best_ssim= best_lpips=
+  final_psnr=16.9278 final_ssim=0.6357 final_lpips=0.6506
+  latest metrics.csv val row: epoch=300 psnr=16.927814180958197 ssim=0.6356545608982012 lpips=0.6505562708928034
+  best metrics.csv val row: epoch=295 psnr=17.066467988893756 ssim=0.6374631459384175 lpips=0.650390625
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=780 expected_full=780 expected_observed=780
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg, img056.jpg, img061.jpg
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: room
+====================================================================================================
+experiment: 0007_room_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: finished
+pipeline_complete: True
+created_at: 2026-07-03T00:53:46
+finished_at: 2026-07-03T06:23:22
+updated_at: 2026-07-03T06:23:22
+duration_hours: 5.493
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=32 n_val=9
+  latest_epoch=300 final_epoch=300 latest_eval_epoch=300
+  latest_step=9600 expected_step=9600
+
+METRICS:
+  best_epoch=260
+  best_psnr=19.8428 best_ssim= best_lpips=
+  final_psnr=19.8212 final_ssim=0.8072 final_lpips=0.5471
+  latest metrics.csv val row: epoch=300 psnr=19.821209451753063 ssim=0.8072291310634907 lpips=0.5471089680989584
+  best metrics.csv val row: epoch=260 psnr=19.842765827346074 ssim=0.8098436705017318 lpips=0.5471402804056803
+
+COUNTS:
+  train_metric_rows=300 expected=300
+  val_metric_rows=60 expected=60
+  val_per_image_rows=540 expected_full=540 expected_observed=540
+  image_epoch_dirs=60 expected=60
+  periodic_ckpts=30 expected=30
+  first/last train epoch=[1, 2, 3] ... [298, 299, 300]
+  first/last val epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last image epoch=[5, 10, 15] ... [290, 295, 300]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0280.pt', 'epoch_0290.pt', 'epoch_0300.pt']
+
+VALIDATION NAMES:
+  img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+
+ERRORS / WARNINGS: NONE
+
+====================================================================================================
+SCENE: trex
+====================================================================================================
+experiment: 0007_trex_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login
+git_commit: d501d49
+status: running
+pipeline_complete: False
+created_at: 2026-07-03T06:23:37
+finished_at: None
+updated_at: 2026-07-03T11:18:00
+duration_hours: 4.906
+
+CONFIG:
+  epochs=300 val_image_interval=5 tb_savempi=5 checkpoint=10 tb_saveimage=0
+  ray=8000 layers=16 sublayers=12 hidden=384 mlp=4 llff_width=1008
+  cv2resize=True no_video=True no_webgl=True
+
+PROGRESS:
+  n_train=44 n_val=11
+  latest_epoch=225 final_epoch=None latest_eval_epoch=220
+  latest_step=9900 expected_step=13200
+
+METRICS:
+  best_epoch=215
+  best_psnr=17.5250 best_ssim= best_lpips=
+  final_psnr=17.4992 final_ssim=0.6423 final_lpips=0.5983
+  latest metrics.csv val row: epoch=220 psnr=17.499151792110627 ssim=0.6422901309372283 lpips=0.5983411615545099
+  best metrics.csv val row: epoch=215 psnr=17.525022756802063 ssim=0.6423360665737678 lpips=0.5963196320967241
+
+COUNTS:
+  train_metric_rows=225 expected=300
+  val_metric_rows=44 expected=60
+  val_per_image_rows=484 expected_full=660 expected_observed=484
+  image_epoch_dirs=45 expected=60
+  periodic_ckpts=22 expected=30
+  first/last train epoch=[1, 2, 3] ... [223, 224, 225]
+  first/last val epoch=[5, 10, 15] ... [210, 215, 220]
+  first/last image epoch=[5, 10, 15] ... [215, 220, 225]
+  first/last ckpt=['epoch_0010.pt', 'epoch_0020.pt', 'epoch_0030.pt'] ... ['epoch_0200.pt', 'epoch_0210.pt', 'epoch_0220.pt']
+
+VALIDATION NAMES:
+  img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg
+
+ERRORS / WARNINGS:
+  - pipeline_complete is not true
+  - status expected finished got running
+  - latest_epoch expected 300 got 225
+  - latest_eval_epoch expected 300 got 220
+  - latest_step expected 13200 got 9900
+  - train metric epochs count/last expected 300/300 got 225/225
+  - val metric epochs count/last expected 60/300 got 44/220
+  - periodic checkpoints count/last expected 30/epoch_0300.pt got 22/epoch_0220.pt
+  - val_per_image rows expected 660 got 484
+  - image epoch dirs count/last expected 60/300 got 45/225
+  - bad validation image png counts, expected 33: [(225, 18)]
+
+====================================================================================================
+OVERALL SUMMARY TABLE
+====================================================================================================
+scene      complete latest_ep best_ep best_psnr  best_ssim  best_lpips final_psnr  final_ssim  final_lpips hours    errors
+CanClip    YES      300       235     19.2305                          19.0144     0.8842      0.4139      3.3181   0
+Ollie      YES      300       255     21.2239                          21.1739     0.8933      0.5722      4.2836   0
+flower     YES      300       295     19.1165                          18.9962     0.6777      0.5544      3.9542   0
+fortress   YES      300       145     20.3092                          20.0023     0.7341      0.6214      5.5389   0
+horns      YES      300       295     17.0665                          16.9278     0.6357      0.6506      7.6319   0
+room       YES      300       260     19.8428                          19.8212     0.8072      0.5471      5.4933   0
+trex       NO       225       215     17.5250                          17.4992     0.6423      0.5983      4.9064   11
+]633;E;echo;952ae037-6b2b-45da-9a30-87d951d5b621]633;C
+================================================================================
+CODE DIFF SUMMARY FROM BASE 7ae74d1 TO HEAD
+================================================================================
+ tools/make_fair_split_txt.py           |  59 +++++
+ tools/make_poses_bounds_from_sparse.py |  13 +
+ train.py                               | 458 ++++++++++++++++++++++++++++++---
+ utils/colmap_runner.py                 |  12 +-
+ utils/load_llff.py                     |   3 +-
+ utils/mpi_utils.py                     | 110 ++++++--
+ utils/sfm_utils.py                     |  16 +-
+ utils/utils.py                         |  21 +-
+ 8 files changed, 615 insertions(+), 77 deletions(-)
+
+CHANGED FILES:
+tools/make_fair_split_txt.py
+tools/make_poses_bounds_from_sparse.py
+train.py
+utils/colmap_runner.py
+utils/load_llff.py
+utils/mpi_utils.py
+utils/sfm_utils.py
+utils/utils.py
+
+PATCH COMMITS:
+d501d49 (HEAD -> main) PATCH 3c: fix epoch counting, checkpoint labels, and terminal logging
+1069af6 PATCH 3b: allow tb_saveimage 0 without crash
+cc74cdf PATCH 3: standardize NeX experiment logging
+12b4799 (tag: nex-val5-loader-ready-v1) PATCH 2: make validation image interval configurable
+9b55130 PATCH 1: support sparse COLMAP data and add dataset prep tools
+
+CORE-RISK GREP IN CURRENT CODE:
+train.py:77:parser.add_argument('-val_image_interval', '--val_image_interval', type=int, default=5, help='validation split interval: zero-based image ids where id mod interval equals 0 are validation')
+train.py:88:parser.add_argument('-no_eval', action='store_true', help='do not measurement the score (PSNR/SSIM/LPIPS) ')
+train.py:89:parser.add_argument('-no_csv', action='store_true', help="do not write CSV on evaluation")
+train.py:93:parser.add_argument('-eval_path', type=str, default='runs/evaluation/', help='path to save validation image')
+train.py:127:  "train_loss_total",
+train.py:177:  mse = tensorToFloat(mse)
+train.py:257:    "val_image_interval": int(args.val_image_interval),
+train.py:284:    "n_train_images": int(len(sampler_train)),
+train.py:285:    "n_val_images": int(len(sampler_val)),
+train.py:317:    f.write("val_image_interval: {}\n".format(args.val_image_interval))
+train.py:318:    f.write("n_train_images: {}\n".format(config["n_train_images"]))
+train.py:319:    f.write("n_val_images: {}\n".format(config["n_val_images"]))
+train.py:325:    "n_train_images": config["n_train_images"],
+train.py:326:    "n_val_images": config["n_val_images"],
+train.py:340:  val_mse = val_metrics.get("MSE", "")
+train.py:352:      checkpoint(paths["best_ckpt"], model, optimizer, int(epoch))
+train.py:484:  def forward(self, sfm, feature, ref_coords, warp, planes, coeff = None):
+train.py:586:  def forward(self, sfm, feature, output_shape, selection):
+train.py:747:def generateAlpha(model, dataset, dataloader, writer, runpath, suffix="", dataloader_train = None):
+train.py:775:    out = evaluation(model,
+train.py:824:  writeIntervalSplitFiles(dpath, args.val_image_interval)
+train.py:874:    generateAlpha(model, dataset, dataloader_val, None, runpath, dataloader_train = dataloader_train)
+train.py:910:  for epoch in range(start_epoch + 1, args.epochs + 1):
+train.py:911:    epoch_loss_total = 0
+train.py:912:    epoch_mse = 0
+train.py:924:      sel = Lsel(output_shape, args.ray)
+train.py:932:      mse = pt.mean((output - gt) ** 2)
+train.py:934:      loss_total = mse
+train.py:938:      loss_total = loss_total + tvc
+train.py:945:      loss_total = loss_total + args.gradloss * (pt.mean(pt.abs(ox - gx)) + pt.mean(pt.abs(oy - gy)))
+train.py:947:      epoch_loss_total += loss_total
+train.py:950:      loss_total.backward()
+train.py:951:      optimizer.step()
+train.py:954:      toc_msg = ts.toc(step, loss_total.item())
+train.py:958:    avg_loss_total = epoch_loss_total / len(sampler_train)
+train.py:959:    avg_mse = epoch_mse / len(sampler_train)
+train.py:962:    writer.add_scalar('loss/total', avg_loss_total, epoch)
+train.py:970:      "train_loss_total": tensorToFloat(avg_loss_total),
+train.py:980:      "latest_train_loss_total": tensorToFloat(avg_loss_total),
+train.py:987:        render = patch_render(model, dataset.sfm, feature, args.ray)
+train.py:1000:      val_metrics = generateAlpha(model, dataset, dataloader_val, writer, runpath, epoch)
+train.py:1010:      if np.isnan(loss_total.item()):
+train.py:1013:      checkpoint(paths["last_ckpt"], model, optimizer, save_epoch)
+train.py:1020:    val_metrics = generateAlpha(model, dataset, dataloader_val, None, runpath, args.epochs, dataloader_train = dataloader_train)
+train.py:1023:  checkpoint(paths["last_ckpt"], model, optimizer, args.epochs)
+train.py:1064:def writeIntervalSplitFiles(dpath, val_image_interval):
+train.py:1065:  interval = int(val_image_interval)
+train.py:1067:    raise ValueError("val_image_interval must be >= 2")
+train.py:1086:    raise ValueError("Empty train split. Increase val_image_interval.")
+train.py:1093:  with open(os.path.join(dpath, "train_image.txt"), "w") as f:
+train.py:1096:  with open(os.path.join(dpath, "val_image.txt"), "w") as f:
+train.py:1100:    "val_image_interval": interval,
+train.py:1136:                           val_image_interval=args.val_image_interval)
+utils/mlp.py:28:  def forward(self, x):
+utils/mlp.py:44:  def forward(self, x):
+utils/mpi_utils.py:31:      render_style='', offset=200, cv2resize=False, val_image_interval=5):
+utils/mpi_utils.py:43:                       val_image_interval=val_image_interval)
+utils/mpi_utils.py:278:def evaluation(model, dataset, dataloader, ray, model_dir_nolp, webpath = 'results/', write_csv = True, epoch = "", epoch_label = "final", split_info = None):
+utils/mpi_utils.py:283:  info_dict = measurement(model, dataset.sfm, dataloader, ray, images_dir, epoch, split_info)
+utils/mpi_utils.py:286:  if "val_image_index" in df.columns:
+utils/mpi_utils.py:287:    df = df.sort_values("val_image_index").reset_index(drop=True)
+utils/mpi_utils.py:359:      predict_image = patch_render(model, dataset.sfm, feature, ray)
+utils/mpi_utils.py:378:def patch_render(model, sfm, feature, ray):
+utils/mpi_utils.py:401:def measurement(model, sfm, dataloader, ray, write_path = '', epoch = "", split_info = None):
+utils/mpi_utils.py:409:  val_image_indices = []
+utils/mpi_utils.py:424:    predict_image = patch_render(model, sfm, feature, ray)
+utils/mpi_utils.py:436:    mse = float(np.mean((predict_image - gt) ** 2))
+utils/mpi_utils.py:457:    val_image_indices.append(val_idx)
+utils/mpi_utils.py:476:    'val_image_index': val_image_indices,
+utils/mpi_utils.py:509:def Lsel(shape, ray):
+utils/sfm_utils.py:25:    dmax=0, invz=0, render_style='', offset=200, val_image_interval=5):
+utils/sfm_utils.py:39:    self.val_image_interval = int(val_image_interval)
+utils/sfm_utils.py:42:      or self.readLLFF(dataset, ref_img, self.val_image_interval) \
+utils/sfm_utils.py:120:  def readLLFF(self, dataset, ref_img = "", val_image_interval=5):
+utils/sfm_utils.py:135:    train_poses, reference_depth, reference_view_id, render_poses, poses, intrinsic, self.webgl = load_llff_data(dataset, factor=None, split_train_val=val_image_interval, render_style=self.render_style)
+utils/sfm_utils.py:164:      train_ids_all = [i for i in range(len(self.imgs)) if i % int(val_image_interval) != 0]
+utils/utils.py:85:    if os.path.exists(dpath + "/train_image.txt") and os.path.exists(dpath + "/val_image.txt"):
+tools/make_fair_split_txt.py:9:    ap.add_argument("--val_image_interval", "--val_interval", type=int, default=5)
+tools/make_fair_split_txt.py:13:    interval = int(args.val_image_interval)
+tools/make_fair_split_txt.py:15:        raise ValueError("val_image_interval must be >= 2")
+tools/make_fair_split_txt.py:40:        (scene_dir / "train_image.txt").write_text("\n".join(train) + "\n")
+tools/make_fair_split_txt.py:41:        (scene_dir / "val_image.txt").write_text("\n".join(val) + "\n")
+tools/make_fair_split_txt.py:45:            "val_image_interval": interval,
+
+FULL PATCH SAVED TO: analysis/NEX_0007_CODE_DIFF_FROM_BASE_20260703_112049.patch
+]633;E;echo;952ae037-6b2b-45da-9a30-87d951d5b621]633;C
+================================================================================
+CONTACT SHEETS
+================================================================================
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/CanClip_best_epoch_0235.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/CanClip_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/flower_best_epoch_0295.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/flower_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/fortress_best_epoch_0145.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/fortress_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/horns_best_epoch_0295.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/horns_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/Ollie_best_epoch_0255.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/Ollie_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/room_best_epoch_0260.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/room_latest_epoch_0300.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/trex_best_epoch_0215.jpg
+analysis/NEX_0007_CONTACT_SHEETS_20260703_112049/trex_latest_epoch_0225.jpg

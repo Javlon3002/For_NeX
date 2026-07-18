@@ -1,0 +1,8 @@
+scene,experiment,complete_ok,errors
+CanClip,0007_CanClip_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+Ollie,0007_Ollie_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+flower,0007_flower_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+fortress,0007_fortress_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+horns,0007_horns_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+room,0007_room_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,1,
+trex,0007_trex_NeX_PATCH3c_PAPERDEFAULT_l16_sl12_h384_mlp4_ray8000_w1008_e300_eval5_ckpt10_valimgint5_cv2_login,0,"pipeline_complete is not true | status expected finished got running | latest_epoch expected 300 got 225 | latest_eval_epoch expected 300 got 220 | latest_step expected 13200 got 9900 | train metric epochs count/last expected 300/300 got 225/225 | val metric epochs count/last expected 60/300 got 44/220 | periodic checkpoints count/last expected 30/epoch_0300.pt got 22/epoch_0220.pt | val_per_image rows expected 660 got 484 | image epoch dirs count/last expected 60/300 got 45/225 | bad validation image png counts, expected 33: [(225, 18)]"

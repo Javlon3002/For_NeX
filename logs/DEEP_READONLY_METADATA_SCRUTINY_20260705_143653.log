@@ -1,0 +1,770 @@
+================================================================================
+DEEP READ-ONLY METADATA SCRUTINY
+================================================================================
+DATE: Sun Jul  5 14:36:53 CEST 2026
+PWD: /home/vivekfei/EXP/NeX
+PYTHON: /home/vivekfei/miniconda3/envs/nex/bin/python
+Python 3.8.19
+LOG: /home/vivekfei/EXP/NeX/logs/DEEP_READONLY_METADATA_SCRUTINY_20260705_143653.log
+
+================================================================================
+AUDIT RULES
+================================================================================
+1) scene/images count must equal COLMAP registered images count
+2) dense/sparse and sparse/0 must be byte-identical
+3) hwf_cxcy.npy must match cameras.bin: [H,W,fx,fy,cx,cy]
+4) poses_bounds.npy must be finite, shape (N,14), and N == image count
+5) near/far must be finite and near < far
+6) train/val split must match interval=5
+7) LLFF loader must read the generated metadata
+8) SfMData must recognize scene as LLFF and select a train reference image
+
+
+================================================================================
+SCENE: CanClip
+================================================================================
+image_count=30
+first_image=img001.png
+last_image=img030.png
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=656234
+OK   : sparse/0/images.bin exists size=656234
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=310770
+OK   : sparse/0/points3D.bin exists size=310770
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=30
+points3D=2206
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=970
+camera_height=543
+camera_params=[1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+hwf_shape=(6, 1)
+hwf_values=[543.0, 970.0, 1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[543.0, 970.0, 1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(30, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=15.899582433
+near_max=27.383587345
+far_min=35.213514597
+far_max=43.151331047
+far_over_near_min=1.412520
+far_over_near_max=2.329206
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.892665
+camera_center_norm_max=5.919431
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=24
+val_count=6
+val_names=img001.png, img006.png, img011.png, img016.png, img021.png, img026.png
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=30
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 30)
+_load_data bds_shape=(2, 30)
+_load_data intrinsic=[543.0, 970.0, 1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/CanClip 15.899582432778772 43.151331046949664
+recentered (3, 4)
+load_llff_data train_poses_shape=(24, 3, 4)
+load_llff_data poses_all_shape=(30, 3, 4)
+load_llff_data reference_depth=[2.0514800548553467, 3.0465734004974365]
+load_llff_data reference_view_id=7
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[543.0, 970.0, 1240.7426114426924, 1240.7426114426924, 333.35625842482625, 280.00086022634827]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/CanClip 15.899582432778772 43.151331046949664
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=30
+ref_img_path=images/img010.png
+ref_cam={'width': 970, 'height': 543, 'fx': 1240.7426114426924, 'fy': 1240.7426114426924, 'px': 333.35625842482625, 'py': 280.00086022634827}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img010.png
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: flower
+================================================================================
+image_count=34
+first_image=img001.JPG
+last_image=img034.JPG
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=9733726
+OK   : sparse/0/images.bin exists size=9733726
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=3758892
+OK   : sparse/0/points3D.bin exists size=3758892
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=34
+points3D=29452
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=998
+camera_height=748
+camera_params=[865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+hwf_shape=(6, 1)
+hwf_values=[748.0, 998.0, 865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[748.0, 998.0, 865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(34, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=4.030689816
+near_max=13.152622099
+far_min=172.546603550
+far_max=221.874696315
+far_over_near_min=13.505112
+far_over_near_max=52.985626
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.818495
+camera_center_norm_max=6.304328
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=27
+val_count=7
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=34
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 34)
+_load_data bds_shape=(2, 34)
+_load_data intrinsic=[748.0, 998.0, 865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/flower 4.030689815964634 221.87469631466047
+recentered (3, 4)
+load_llff_data train_poses_shape=(27, 3, 4)
+load_llff_data poses_all_shape=(34, 3, 4)
+load_llff_data reference_depth=[1.9249718189239502, 69.2750244140625]
+load_llff_data reference_view_id=16
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[748.0, 998.0, 865.9750436814775, 865.9750436814775, 497.75452862003374, 395.56302751294226]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/flower 4.030689815964634 221.87469631466047
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=34
+ref_img_path=images/img022.JPG
+ref_cam={'width': 998, 'height': 748, 'fx': 865.9750436814775, 'fy': 865.9750436814775, 'px': 497.75452862003374, 'py': 395.56302751294226}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img022.JPG
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: fortress
+================================================================================
+image_count=42
+first_image=img001.JPG
+last_image=img042.JPG
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=14411318
+OK   : sparse/0/images.bin exists size=14411318
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=6331899
+OK   : sparse/0/points3D.bin exists size=6331899
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=42
+points3D=38521
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=1004
+camera_height=753
+camera_params=[847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+hwf_shape=(6, 1)
+hwf_values=[753.0, 1004.0, 847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[753.0, 1004.0, 847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(42, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=12.211928009
+near_max=15.572961037
+far_min=42.958773906
+far_max=138.707042376
+far_over_near_min=3.033513
+far_over_near_max=10.037629
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.837178
+camera_center_norm_max=5.955774
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=33
+val_count=9
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=42
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 42)
+_load_data bds_shape=(2, 42)
+_load_data intrinsic=[753.0, 1004.0, 847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/fortress 12.211928009091384 138.70704237571653
+recentered (3, 4)
+load_llff_data train_poses_shape=(33, 3, 4)
+load_llff_data poses_all_shape=(42, 3, 4)
+load_llff_data reference_depth=[1.6379250288009644, 9.031731605529785]
+load_llff_data reference_view_id=16
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[753.0, 1004.0, 847.2541299755469, 847.2541299755469, 502.1461451565557, 381.088625982526]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/fortress 12.211928009091384 138.70704237571653
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=42
+ref_img_path=images/img022.JPG
+ref_cam={'width': 1004, 'height': 753, 'fx': 847.2541299755469, 'fy': 847.2541299755469, 'px': 502.1461451565557, 'py': 381.088625982526}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img022.JPG
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: horns
+================================================================================
+image_count=62
+first_image=img001.jpg
+last_image=img062.jpg
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=8158722
+OK   : sparse/0/images.bin exists size=8158722
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=3450167
+OK   : sparse/0/points3D.bin exists size=3450167
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=62
+points3D=28093
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=1004
+camera_height=753
+camera_params=[836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+hwf_shape=(6, 1)
+hwf_values=[753.0, 1004.0, 836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[753.0, 1004.0, 836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(62, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=2.345690109
+near_max=7.815285026
+far_min=149.114468437
+far_max=201.604527739
+far_over_near_min=21.685388
+far_over_near_max=78.040199
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.193308
+camera_center_norm_max=6.361043
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=49
+val_count=13
+val_names=img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg, img056.jpg, img061.jpg
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=62
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 62)
+_load_data bds_shape=(2, 62)
+_load_data intrinsic=[753.0, 1004.0, 836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/horns 2.3456901088667306 201.6045277391948
+recentered (3, 4)
+load_llff_data train_poses_shape=(49, 3, 4)
+load_llff_data poses_all_shape=(62, 3, 4)
+load_llff_data reference_depth=[1.579550862312317, 96.93537139892578]
+load_llff_data reference_view_id=26
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[753.0, 1004.0, 836.6730312467163, 836.6730312467163, 505.97471126321255, 367.77350247326456]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/horns 2.3456901088667306 201.6045277391948
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=62
+ref_img_path=images/img034.jpg
+ref_cam={'width': 1004, 'height': 753, 'fx': 836.6730312467163, 'fy': 836.6730312467163, 'px': 505.97471126321255, 'py': 367.77350247326456}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img034.jpg
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: Ollie
+================================================================================
+image_count=40
+first_image=img001.png
+last_image=img040.png
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=1805584
+OK   : sparse/0/images.bin exists size=1805584
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=835171
+OK   : sparse/0/points3D.bin exists size=835171
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=40
+points3D=6697
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=967
+camera_height=541
+camera_params=[1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+hwf_shape=(6, 1)
+hwf_values=[541.0, 967.0, 1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[541.0, 967.0, 1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(40, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=4.312593946
+near_max=16.830406932
+far_min=22.401102578
+far_max=69.826341965
+far_over_near_min=1.656043
+far_over_near_max=10.597898
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.677598
+camera_center_norm_max=6.209035
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=32
+val_count=8
+val_names=img001.png, img006.png, img011.png, img016.png, img021.png, img026.png, img031.png, img036.png
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=40
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 40)
+_load_data bds_shape=(2, 40)
+_load_data intrinsic=[541.0, 967.0, 1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/Ollie 4.312593945529384 69.8263419649719
+recentered (3, 4)
+load_llff_data train_poses_shape=(32, 3, 4)
+load_llff_data poses_all_shape=(40, 3, 4)
+load_llff_data reference_depth=[3.244734525680542, 9.806699752807617]
+load_llff_data reference_view_id=17
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[541.0, 967.0, 1733.6380952617171, 1733.6380952617171, 601.2815657554171, 274.6215537617472]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/Ollie 4.312593945529384 69.8263419649719
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=40
+ref_img_path=images/img023.png
+ref_cam={'width': 967, 'height': 541, 'fx': 1733.6380952617171, 'fy': 1733.6380952617171, 'px': 601.2815657554171, 'py': 274.6215537617472}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img023.png
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: room
+================================================================================
+image_count=41
+first_image=img001.JPG
+last_image=img041.JPG
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=1369539
+OK   : sparse/0/images.bin exists size=1369539
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=640085
+OK   : sparse/0/points3D.bin exists size=640085
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=41
+points3D=6111
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=996
+camera_height=746
+camera_params=[769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+hwf_shape=(6, 1)
+hwf_values=[746.0, 996.0, 769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[746.0, 996.0, 769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(41, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=2.848773102
+near_max=14.185676869
+far_min=103.174959794
+far_max=209.180130294
+far_over_near_min=10.511206
+far_over_near_max=57.606991
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.506100
+camera_center_norm_max=6.679635
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=32
+val_count=9
+val_names=img001.JPG, img006.JPG, img011.JPG, img016.JPG, img021.JPG, img026.JPG, img031.JPG, img036.JPG, img041.JPG
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=41
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 41)
+_load_data bds_shape=(2, 41)
+_load_data intrinsic=[746.0, 996.0, 769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/room 2.848773101793737 209.18013029411043
+recentered (3, 4)
+load_llff_data train_poses_shape=(32, 3, 4)
+load_llff_data poses_all_shape=(41, 3, 4)
+load_llff_data reference_depth=[1.3333333730697632, 57.347740173339844]
+load_llff_data reference_view_id=11
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[746.0, 996.0, 769.9233027733142, 769.9233027733142, 490.9121333144042, 363.10047982958315]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/room 2.848773101793737 209.18013029411043
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=41
+ref_img_path=images/img015.JPG
+ref_cam={'width': 996, 'height': 746, 'fx': 769.9233027733142, 'fy': 769.9233027733142, 'px': 490.9121333144042, 'py': 363.10047982958315}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img015.JPG
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+SCENE: trex
+================================================================================
+image_count=55
+first_image=img001.jpg
+last_image=img055.jpg
+
+--- SPARSE FILES ---
+OK   : dense/sparse/cameras.bin exists size=64
+OK   : sparse/0/cameras.bin exists size=64
+OK   : dense/sparse/cameras.bin == sparse/0/cameras.bin
+OK   : dense/sparse/images.bin exists size=6524029
+OK   : sparse/0/images.bin exists size=6524029
+OK   : dense/sparse/images.bin == sparse/0/images.bin
+OK   : dense/sparse/points3D.bin exists size=2828087
+OK   : sparse/0/points3D.bin exists size=2828087
+OK   : dense/sparse/points3D.bin == sparse/0/points3D.bin
+
+--- COLMAP MODEL READ ---
+num_cameras=1
+registered_images=55
+points3D=24605
+OK   : registered image count matches image folder count
+OK   : all COLMAP image names exist on disk
+OK   : all disk images are registered in COLMAP
+
+--- CAMERA / HWF_CXCY CHECK ---
+OK   : single camera model
+camera_id=1
+camera_model=PINHOLE
+camera_width=1002
+camera_height=751
+camera_params=[833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+hwf_shape=(6, 1)
+hwf_values=[751.0, 1002.0, 833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+OK   : hwf_cxcy shape is valid
+expected_from_cameras_bin=[751.0, 1002.0, 833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+abs_diff=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+OK   : hwf_cxcy exactly matches cameras.bin
+OK   : H/W/fx/fy are positive
+OK   : principal point lies inside image bounds
+
+--- POSES_BOUNDS CHECK ---
+poses_bounds_shape=(55, 14)
+OK   : poses_bounds shape is correct
+OK   : poses_bounds is finite
+near_min=2.535718685
+near_max=10.018214125
+far_min=107.930412767
+far_max=179.975447678
+far_over_near_min=13.880016
+far_over_near_max=50.971144
+OK   : all near bounds are positive
+OK   : all far bounds are greater than near bounds
+rotation_det_min=1.000000
+rotation_det_max=1.000000
+camera_center_norm_min=0.423280
+camera_center_norm_max=6.273078
+OK   : rotation determinants look valid
+
+--- TRAIN / VAL SPLIT CHECK ---
+train_count=44
+val_count=11
+val_names=img001.jpg, img006.jpg, img011.jpg, img016.jpg, img021.jpg, img026.jpg, img031.jpg, img036.jpg, img041.jpg, img046.jpg, img051.jpg
+OK   : no duplicates in train split
+OK   : no duplicates in val split
+OK   : no train/val overlap
+OK   : train+val union equals all images
+OK   : val split matches interval=5 rule
+OK   : train split matches interval=5 rule
+split_info_n_images=55
+split_info_val_interval=5
+OK   : split_info n_images correct
+OK   : split_info interval correct
+
+--- LLFF LOADER CHECK ---
+_load_data poses_shape=(3, 4, 55)
+_load_data bds_shape=(2, 55)
+_load_data intrinsic=[751.0, 1002.0, 833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+OK   : _load_data read poses_bounds + hwf_cxcy
+Loaded dataset/trex 2.535718685473336 179.97544767759095
+recentered (3, 4)
+load_llff_data train_poses_shape=(44, 3, 4)
+load_llff_data poses_all_shape=(55, 3, 4)
+load_llff_data reference_depth=[2.257554769515991, 59.32828140258789]
+load_llff_data reference_view_id=41
+load_llff_data render_poses_shape=(120, 3, 4)
+load_llff_data intrinsic=[751.0, 1002.0, 833.6014576011693, 833.6014576011693, 501.6537110067302, 367.5507332855347]
+OK   : LLFF train pose count matches split
+OK   : LLFF all pose count matches images
+
+--- NeX SfMData CHECK ---
+Loaded dataset/trex 2.535718685473336 179.97544767759095
+recentered (3, 4)
+dmin = 0.000000, dmax = 0.000000, invz = 0, offset = 200
+dataset_type=llff
+num_imgs_in_sfm=55
+ref_img_path=images/img053.jpg
+ref_cam={'width': 1002, 'height': 751, 'fx': 833.6014576011693, 'fy': 833.6014576011693, 'px': 501.6537110067302, 'py': 367.5507332855347}
+OK   : SfMData reads scene as LLFF
+OK   : SfMData image count matches
+OK   : reference image is in train split: img053.jpg
+FAIL : bad selected depth range: dmin=0, dmax=0
+
+================================================================================
+FINAL DEEP SCRUTINY SUMMARY
+================================================================================
+TOTAL_FAILURES=7
+TOTAL_WARNINGS=0
+
+FAILED ITEMS:
+  CanClip: bad selected depth range: dmin=0, dmax=0
+  flower: bad selected depth range: dmin=0, dmax=0
+  fortress: bad selected depth range: dmin=0, dmax=0
+  horns: bad selected depth range: dmin=0, dmax=0
+  Ollie: bad selected depth range: dmin=0, dmax=0
+  room: bad selected depth range: dmin=0, dmax=0
+  trex: bad selected depth range: dmin=0, dmax=0
+================================================================================
+
+================================================================================
+LOG SAVED
+================================================================================
+/home/vivekfei/EXP/NeX/logs/DEEP_READONLY_METADATA_SCRUTINY_20260705_143653.log

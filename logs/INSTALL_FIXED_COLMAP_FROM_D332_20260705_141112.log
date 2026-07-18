@@ -1,0 +1,498 @@
+================================================================================
+INSTALL FIXED COLMAP DATASET INTO NeX/dataset
+================================================================================
+DATE: Sun Jul  5 14:11:12 CEST 2026
+PWD: /home/vivekfei/EXP/NeX
+SRC=/home/vivekfei/EXP/FIXED_COLMAP_FROM_D332/__NEX_READY_UNDISTORTED__
+DST=/home/vivekfei/EXP/NeX/dataset
+
+1) CHECK SOURCE
+
+SOURCE === CanClip ===
+30
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === flower ===
+34
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === fortress ===
+42
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === horns ===
+62
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === Ollie ===
+40
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === room ===
+41
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+SOURCE === trex ===
+55
+cameras.bin=OK
+images.bin=OK
+points3D.bin=OK
+
+2) BACKUP OLD dataset/
+
+3) COPY FIXED SCENES INTO dataset/
+
+COPY === CanClip ===
+
+COPY === flower ===
+
+COPY === fortress ===
+
+COPY === horns ===
+
+COPY === Ollie ===
+
+COPY === room ===
+
+COPY === trex ===
+
+4) FINAL VERIFY
+================================================================================
+
+=== CanClip ===
+images=30
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== flower ===
+images=34
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== fortress ===
+images=42
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== horns ===
+images=62
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== Ollie ===
+images=40
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== room ===
+images=41
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+=== trex ===
+images=55
+dense/sparse/cameras.bin=OK
+dense/sparse/images.bin=OK
+dense/sparse/points3D.bin=OK
+sparse/0/cameras.bin=OK
+sparse/0/images.bin=OK
+sparse/0/points3D.bin=OK
+
+5) FINAL DATASET TREE LEVEL 3
+/home/vivekfei/EXP/NeX/dataset
+├── CanClip
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.png
+│   │   ├── img002.png
+│   │   ├── img003.png
+│   │   ├── img004.png
+│   │   ├── img005.png
+│   │   ├── img006.png
+│   │   ├── img007.png
+│   │   ├── img008.png
+│   │   ├── img009.png
+│   │   ├── img010.png
+│   │   ├── img011.png
+│   │   ├── img012.png
+│   │   ├── img013.png
+│   │   ├── img014.png
+│   │   ├── img015.png
+│   │   ├── img016.png
+│   │   ├── img017.png
+│   │   ├── img018.png
+│   │   ├── img019.png
+│   │   ├── img020.png
+│   │   ├── img021.png
+│   │   ├── img022.png
+│   │   ├── img023.png
+│   │   ├── img024.png
+│   │   ├── img025.png
+│   │   ├── img026.png
+│   │   ├── img027.png
+│   │   ├── img028.png
+│   │   ├── img029.png
+│   │   └── img030.png
+│   └── sparse
+│       └── 0
+├── flower
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.JPG
+│   │   ├── img002.JPG
+│   │   ├── img003.JPG
+│   │   ├── img004.JPG
+│   │   ├── img005.JPG
+│   │   ├── img006.JPG
+│   │   ├── img007.JPG
+│   │   ├── img008.JPG
+│   │   ├── img009.JPG
+│   │   ├── img010.JPG
+│   │   ├── img011.JPG
+│   │   ├── img012.JPG
+│   │   ├── img013.JPG
+│   │   ├── img014.JPG
+│   │   ├── img015.JPG
+│   │   ├── img016.JPG
+│   │   ├── img017.JPG
+│   │   ├── img018.JPG
+│   │   ├── img019.JPG
+│   │   ├── img020.JPG
+│   │   ├── img021.JPG
+│   │   ├── img022.JPG
+│   │   ├── img023.JPG
+│   │   ├── img024.JPG
+│   │   ├── img025.JPG
+│   │   ├── img026.JPG
+│   │   ├── img027.JPG
+│   │   ├── img028.JPG
+│   │   ├── img029.JPG
+│   │   ├── img030.JPG
+│   │   ├── img031.JPG
+│   │   ├── img032.JPG
+│   │   ├── img033.JPG
+│   │   └── img034.JPG
+│   └── sparse
+│       └── 0
+├── fortress
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.JPG
+│   │   ├── img002.JPG
+│   │   ├── img003.JPG
+│   │   ├── img004.JPG
+│   │   ├── img005.JPG
+│   │   ├── img006.JPG
+│   │   ├── img007.JPG
+│   │   ├── img008.JPG
+│   │   ├── img009.JPG
+│   │   ├── img010.JPG
+│   │   ├── img011.JPG
+│   │   ├── img012.JPG
+│   │   ├── img013.JPG
+│   │   ├── img014.JPG
+│   │   ├── img015.JPG
+│   │   ├── img016.JPG
+│   │   ├── img017.JPG
+│   │   ├── img018.JPG
+│   │   ├── img019.JPG
+│   │   ├── img020.JPG
+│   │   ├── img021.JPG
+│   │   ├── img022.JPG
+│   │   ├── img023.JPG
+│   │   ├── img024.JPG
+│   │   ├── img025.JPG
+│   │   ├── img026.JPG
+│   │   ├── img027.JPG
+│   │   ├── img028.JPG
+│   │   ├── img029.JPG
+│   │   ├── img030.JPG
+│   │   ├── img031.JPG
+│   │   ├── img032.JPG
+│   │   ├── img033.JPG
+│   │   ├── img034.JPG
+│   │   ├── img035.JPG
+│   │   ├── img036.JPG
+│   │   ├── img037.JPG
+│   │   ├── img038.JPG
+│   │   ├── img039.JPG
+│   │   ├── img040.JPG
+│   │   ├── img041.JPG
+│   │   └── img042.JPG
+│   └── sparse
+│       └── 0
+├── horns
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.jpg
+│   │   ├── img002.jpg
+│   │   ├── img003.jpg
+│   │   ├── img004.jpg
+│   │   ├── img005.jpg
+│   │   ├── img006.jpg
+│   │   ├── img007.jpg
+│   │   ├── img008.jpg
+│   │   ├── img009.jpg
+│   │   ├── img010.jpg
+│   │   ├── img011.jpg
+│   │   ├── img012.jpg
+│   │   ├── img013.jpg
+│   │   ├── img014.jpg
+│   │   ├── img015.jpg
+│   │   ├── img016.jpg
+│   │   ├── img017.jpg
+│   │   ├── img018.jpg
+│   │   ├── img019.jpg
+│   │   ├── img020.jpg
+│   │   ├── img021.jpg
+│   │   ├── img022.jpg
+│   │   ├── img023.jpg
+│   │   ├── img024.jpg
+│   │   ├── img025.jpg
+│   │   ├── img026.jpg
+│   │   ├── img027.jpg
+│   │   ├── img028.jpg
+│   │   ├── img029.jpg
+│   │   ├── img030.jpg
+│   │   ├── img031.jpg
+│   │   ├── img032.jpg
+│   │   ├── img033.jpg
+│   │   ├── img034.jpg
+│   │   ├── img035.jpg
+│   │   ├── img036.jpg
+│   │   ├── img037.jpg
+│   │   ├── img038.jpg
+│   │   ├── img039.jpg
+│   │   ├── img040.jpg
+│   │   ├── img041.jpg
+│   │   ├── img042.jpg
+│   │   ├── img043.jpg
+│   │   ├── img044.jpg
+│   │   ├── img045.jpg
+│   │   ├── img046.jpg
+│   │   ├── img047.jpg
+│   │   ├── img048.jpg
+│   │   ├── img049.jpg
+│   │   ├── img050.jpg
+│   │   ├── img051.jpg
+│   │   ├── img052.jpg
+│   │   ├── img053.jpg
+│   │   ├── img054.jpg
+│   │   ├── img055.jpg
+│   │   ├── img056.jpg
+│   │   ├── img057.jpg
+│   │   ├── img058.jpg
+│   │   ├── img059.jpg
+│   │   ├── img060.jpg
+│   │   ├── img061.jpg
+│   │   └── img062.jpg
+│   └── sparse
+│       └── 0
+├── Ollie
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.png
+│   │   ├── img002.png
+│   │   ├── img003.png
+│   │   ├── img004.png
+│   │   ├── img005.png
+│   │   ├── img006.png
+│   │   ├── img007.png
+│   │   ├── img008.png
+│   │   ├── img009.png
+│   │   ├── img010.png
+│   │   ├── img011.png
+│   │   ├── img012.png
+│   │   ├── img013.png
+│   │   ├── img014.png
+│   │   ├── img015.png
+│   │   ├── img016.png
+│   │   ├── img017.png
+│   │   ├── img018.png
+│   │   ├── img019.png
+│   │   ├── img020.png
+│   │   ├── img021.png
+│   │   ├── img022.png
+│   │   ├── img023.png
+│   │   ├── img024.png
+│   │   ├── img025.png
+│   │   ├── img026.png
+│   │   ├── img027.png
+│   │   ├── img028.png
+│   │   ├── img029.png
+│   │   ├── img030.png
+│   │   ├── img031.png
+│   │   ├── img032.png
+│   │   ├── img033.png
+│   │   ├── img034.png
+│   │   ├── img035.png
+│   │   ├── img036.png
+│   │   ├── img037.png
+│   │   ├── img038.png
+│   │   ├── img039.png
+│   │   └── img040.png
+│   └── sparse
+│       └── 0
+├── room
+│   ├── BEST_SPARSE_MODEL.txt
+│   ├── dense
+│   │   └── sparse
+│   ├── images
+│   │   ├── img001.JPG
+│   │   ├── img002.JPG
+│   │   ├── img003.JPG
+│   │   ├── img004.JPG
+│   │   ├── img005.JPG
+│   │   ├── img006.JPG
+│   │   ├── img007.JPG
+│   │   ├── img008.JPG
+│   │   ├── img009.JPG
+│   │   ├── img010.JPG
+│   │   ├── img011.JPG
+│   │   ├── img012.JPG
+│   │   ├── img013.JPG
+│   │   ├── img014.JPG
+│   │   ├── img015.JPG
+│   │   ├── img016.JPG
+│   │   ├── img017.JPG
+│   │   ├── img018.JPG
+│   │   ├── img019.JPG
+│   │   ├── img020.JPG
+│   │   ├── img021.JPG
+│   │   ├── img022.JPG
+│   │   ├── img023.JPG
+│   │   ├── img024.JPG
+│   │   ├── img025.JPG
+│   │   ├── img026.JPG
+│   │   ├── img027.JPG
+│   │   ├── img028.JPG
+│   │   ├── img029.JPG
+│   │   ├── img030.JPG
+│   │   ├── img031.JPG
+│   │   ├── img032.JPG
+│   │   ├── img033.JPG
+│   │   ├── img034.JPG
+│   │   ├── img035.JPG
+│   │   ├── img036.JPG
+│   │   ├── img037.JPG
+│   │   ├── img038.JPG
+│   │   ├── img039.JPG
+│   │   ├── img040.JPG
+│   │   └── img041.JPG
+│   └── sparse
+│       └── 0
+└── trex
+    ├── BEST_SPARSE_MODEL.txt
+    ├── dense
+    │   └── sparse
+    ├── images
+    │   ├── img001.jpg
+    │   ├── img002.jpg
+    │   ├── img003.jpg
+    │   ├── img004.jpg
+    │   ├── img005.jpg
+    │   ├── img006.jpg
+    │   ├── img007.jpg
+    │   ├── img008.jpg
+    │   ├── img009.jpg
+    │   ├── img010.jpg
+    │   ├── img011.jpg
+    │   ├── img012.jpg
+    │   ├── img013.jpg
+    │   ├── img014.jpg
+    │   ├── img015.jpg
+    │   ├── img016.jpg
+    │   ├── img017.jpg
+    │   ├── img018.jpg
+    │   ├── img019.jpg
+    │   ├── img020.jpg
+    │   ├── img021.jpg
+    │   ├── img022.jpg
+    │   ├── img023.jpg
+    │   ├── img024.jpg
+    │   ├── img025.jpg
+    │   ├── img026.jpg
+    │   ├── img027.jpg
+    │   ├── img028.jpg
+    │   ├── img029.jpg
+    │   ├── img030.jpg
+    │   ├── img031.jpg
+    │   ├── img032.jpg
+    │   ├── img033.jpg
+    │   ├── img034.jpg
+    │   ├── img035.jpg
+    │   ├── img036.jpg
+    │   ├── img037.jpg
+    │   ├── img038.jpg
+    │   ├── img039.jpg
+    │   ├── img040.jpg
+    │   ├── img041.jpg
+    │   ├── img042.jpg
+    │   ├── img043.jpg
+    │   ├── img044.jpg
+    │   ├── img045.jpg
+    │   ├── img046.jpg
+    │   ├── img047.jpg
+    │   ├── img048.jpg
+    │   ├── img049.jpg
+    │   ├── img050.jpg
+    │   ├── img051.jpg
+    │   ├── img052.jpg
+    │   ├── img053.jpg
+    │   ├── img054.jpg
+    │   └── img055.jpg
+    └── sparse
+        └── 0
+
+42 directories, 311 files
+
+6) BACKUP CREATED:
+/home/vivekfei/EXP/NeX/dataset_BACKUP_BEFORE_FIXED_COLMAP_20260705_141112
+
+SUCCESS: fixed COLMAP dataset installed into /home/vivekfei/EXP/NeX/dataset

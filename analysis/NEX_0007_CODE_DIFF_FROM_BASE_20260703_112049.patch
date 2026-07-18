@@ -1,0 +1,1014 @@
+diff --git a/tools/make_fair_split_txt.py b/tools/make_fair_split_txt.py
+new file mode 100644
+index 0000000..0db1294
+--- /dev/null
++++ b/tools/make_fair_split_txt.py
+@@ -0,0 +1,59 @@
++#!/usr/bin/env python3
++import argparse
++import json
++from pathlib import Path
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--root", type=str, default="dataset/full_data_4x_fresh_colmap")
++    ap.add_argument("--val_image_interval", "--val_interval", type=int, default=5)
++    ap.add_argument("--scenes", nargs="+", default=["CanClip", "flower", "fortress", "horns", "Ollie", "room", "trex"])
++    args = ap.parse_args()
++
++    interval = int(args.val_image_interval)
++    if interval <= 1:
++        raise ValueError("val_image_interval must be >= 2")
++
++    root = Path(args.root)
++
++    for scene in args.scenes:
++        scene_dir = root / scene
++        img_dir = scene_dir / "images"
++
++        imgs = sorted([
++            p.name for p in img_dir.iterdir()
++            if p.suffix.lower() in [".png", ".jpg", ".jpeg"]
++        ])
++
++        ids = list(range(len(imgs)))
++        val_ids = [i for i in ids if i % interval == 0]
++        train_ids = [i for i in ids if i % interval != 0]
++
++        train = [imgs[i] for i in train_ids]
++        val = [imgs[i] for i in val_ids]
++
++        if not train:
++            raise ValueError(f"{scene}: empty train split")
++        if not val:
++            raise ValueError(f"{scene}: empty val split")
++
++        (scene_dir / "train_image.txt").write_text("\n".join(train) + "\n")
++        (scene_dir / "val_image.txt").write_text("\n".join(val) + "\n")
++
++        info = {
++            "scene": scene,
++            "val_image_interval": interval,
++            "val_split_rule": "start_from_first_image_zero_based_ids_mod_interval_eq_0",
++            "n_images": len(imgs),
++            "train_ids_0based": train_ids,
++            "val_ids_0based": val_ids,
++            "train_names": train,
++            "val_names": val,
++        }
++        (scene_dir / "split_info.json").write_text(json.dumps(info, indent=2) + "\n")
++
++        print(f"[OK] {scene}: interval={interval} total={len(imgs)} train={len(train)} val={len(val)}")
++        print("     val:", ", ".join(val))
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/make_poses_bounds_from_sparse.py b/tools/make_poses_bounds_from_sparse.py
+new file mode 100644
+index 0000000..818c43c
+--- /dev/null
++++ b/tools/make_poses_bounds_from_sparse.py
+@@ -0,0 +1,13 @@
++from pathlib import Path
++from utils.colmap_runner import load_colmap_data, save_poses
++
++root = Path("dataset/full_data_4x_fresh_colmap")
++scenes = ["CanClip", "flower", "fortress", "horns", "Ollie", "room", "trex"]
++
++for scene in scenes:
++    d = root / scene
++    print(f"=== {scene} ===")
++    poses, pts3d, perm, hwf_cxcy = load_colmap_data(str(d))
++    save_poses(str(d), poses, pts3d, perm, hwf_cxcy)
++    print("created:", d / "poses_bounds.npy")
++    print("created:", d / "hwf_cxcy.npy")
+diff --git a/train.py b/train.py
+index c3adf48..bf2a529 100644
+--- a/train.py
++++ b/train.py
+@@ -19,7 +19,7 @@ from torch.utils.data import Dataset, DataLoader
+ from torchvision.utils import save_image, make_grid
+ from torch.utils.tensorboard import SummaryWriter
+ 
+-import os, sys, json
++import os, sys, json, shutil, csv
+ import numpy as np
+ from skimage import io, transform
+ from datetime import datetime
+@@ -74,6 +74,7 @@ parser.add_argument('-scale', type=float, default=-1, help='scale the MPI size')
+ parser.add_argument('-llff_width', type=int, default=1008, help='if input dataset is LLFF it will resize the image to <llff_width>')
+ parser.add_argument('-deepview_width', type=int, default=800, help='if input dataset is deepview dataset, it will resize the image to <deepview_width>')
+ parser.add_argument('-train_ratio', type=float, default=0.875, help='ratio to split number of train/test (in case dataset doesn\'t specify how to split)')
++parser.add_argument('-val_image_interval', '--val_image_interval', type=int, default=5, help='validation split interval: zero-based image ids where id mod interval equals 0 are validation')
+ parser.add_argument('-random_split', action='store_true', help='random split the train/test set. (in case dataset doesn\'t specify how to split)')
+ parser.add_argument('-num_workers', type=int, default=8, help='number of pytorch\'s dataloader worker')
+ parser.add_argument('-cv2resize', action='store_true', help='apply cv2.resize instead of skimage.transform.resize to match the score in our paper (see note in github readme for more detail) ')
+@@ -103,7 +104,7 @@ parser.add_argument('-nice_shiny', action='store_true', help="generate video tha
+ 
+ 
+ #training utility
+-parser.add_argument('-model_dir', type=str, default="scene", help='model (scene) directory which store in runs/<model_dir>/')
++parser.add_argument('-model_dir', type=str, default="scene", help='model (scene) directory stored in results/<model_dir>/')
+ parser.add_argument('-pretrained', type=str, default="", help='location of checkpoint file, if not provide will use model_dir instead')
+ parser.add_argument('-restart', action='store_true', help='delete old weight and retrain')
+ parser.add_argument('-clean', action='store_true', help='delete old weight without start training process')
+@@ -114,6 +115,268 @@ parser.add_argument('-all_gpu',action='store_true',help="In multiple GPU trainin
+ 
+ args = parser.parse_args()
+ 
++# =============================================================================
++# STANDARD EXPERIMENT LOGGING HELPERS
++# Logging-only patch. NeX model/training/rendering core is untouched.
++# =============================================================================
++
++METRICS_FIELDS = [
++  "timestamp",
++  "epoch",
++  "phase",
++  "train_loss_total",
++  "train_mse",
++  "train_psnr",
++  "lr",
++  "val_mean_mse",
++  "val_mean_psnr",
++  "val_mean_ssim",
++  "val_mean_lpips",
++  "is_best",
++]
++
++class TeeStream:
++  def __init__(self, *streams):
++    self.streams = streams
++
++  def write(self, data):
++    for stream in self.streams:
++      stream.write(data)
++      stream.flush()
++
++  def flush(self):
++    for stream in self.streams:
++      stream.flush()
++
++def nowIso():
++  return datetime.now().isoformat(timespec="seconds")
++
++def jsonDefault(obj):
++  if isinstance(obj, np.ndarray):
++    return obj.tolist()
++  if isinstance(obj, np.integer):
++    return int(obj)
++  if isinstance(obj, np.floating):
++    return float(obj)
++  if pt.is_tensor(obj):
++    if obj.numel() == 1:
++      return float(obj.detach().cpu().item())
++    return obj.detach().cpu().tolist()
++  return str(obj)
++
++def tensorToFloat(x):
++  if x == "":
++    return ""
++  if pt.is_tensor(x):
++    return float(x.detach().cpu().item())
++  if isinstance(x, np.generic):
++    return float(x)
++  return float(x)
++
++def psnrFromMse(mse):
++  mse = tensorToFloat(mse)
++  return float(-10.0 * np.log10(max(mse, 1e-12)))
++
++def getGitCommit():
++  try:
++    return os.popen("git rev-parse --short HEAD 2>/dev/null").read().strip()
++  except Exception:
++    return ""
++
++def expPaths(runpath):
++  exp_dir = os.path.join(runpath, args.model_dir)
++  return {
++    "exp_dir": exp_dir,
++    "checkpoints_dir": os.path.join(exp_dir, "checkpoints"),
++    "best_dir": os.path.join(exp_dir, "checkpoints", "best"),
++    "periodic_dir": os.path.join(exp_dir, "checkpoints", "periodic"),
++    "images_dir": os.path.join(exp_dir, "images"),
++    "logs_dir": os.path.join(exp_dir, "logs"),
++    "tensorboard_dir": os.path.join(exp_dir, "logs", "tensorboard"),
++    "config_path": os.path.join(exp_dir, "config.json"),
++    "run_info_path": os.path.join(exp_dir, "run_info.txt"),
++    "metrics_path": os.path.join(exp_dir, "metrics.csv"),
++    "summary_path": os.path.join(exp_dir, "logs", "summary.json"),
++    "terminal_log_path": os.path.join(exp_dir, "logs", "terminal_output.log"),
++    "last_ckpt": os.path.join(exp_dir, "checkpoints", "last.pt"),
++    "best_ckpt": os.path.join(exp_dir, "checkpoints", "best", "best.pt"),
++  }
++
++def ensureExperimentDirs(runpath):
++  paths = expPaths(runpath)
++  os.makedirs(paths["exp_dir"], exist_ok=True)
++  os.makedirs(paths["checkpoints_dir"], exist_ok=True)
++  os.makedirs(paths["best_dir"], exist_ok=True)
++  os.makedirs(paths["periodic_dir"], exist_ok=True)
++  os.makedirs(paths["images_dir"], exist_ok=True)
++  os.makedirs(paths["logs_dir"], exist_ok=True)
++  os.makedirs(paths["tensorboard_dir"], exist_ok=True)
++  return paths
++
++def setupTerminalLogging(paths):
++  if getattr(sys, "_nex_pipeline_tee_started", False):
++    return
++  log_f = open(paths["terminal_log_path"], "a", buffering=1)
++  sys.stdout = TeeStream(sys.__stdout__, log_f)
++  sys.stderr = TeeStream(sys.__stderr__, log_f)
++  sys._nex_pipeline_tee_started = True
++
++def readSplitInfo(dpath):
++  split_path = os.path.join(dpath, "split_info.json")
++  if os.path.exists(split_path):
++    with open(split_path, "r") as f:
++      return json.load(f)
++  return {}
++
++def appendMetricsRow(runpath, row):
++  paths = ensureExperimentDirs(runpath)
++  out = {k: row.get(k, "") for k in METRICS_FIELDS}
++  write_header = not os.path.exists(paths["metrics_path"])
++  with open(paths["metrics_path"], "a", newline="") as f:
++    writer = csv.DictWriter(f, fieldnames=METRICS_FIELDS)
++    if write_header:
++      writer.writeheader()
++    writer.writerow(out)
++
++def updateSummary(runpath, extra):
++  paths = ensureExperimentDirs(runpath)
++  summary = {}
++  if os.path.exists(paths["summary_path"]):
++    try:
++      with open(paths["summary_path"], "r") as f:
++        summary = json.load(f)
++    except Exception:
++      summary = {}
++
++  base = {
++    "experiment": args.model_dir,
++    "model_name": "NeX",
++    "branch": "nex_baseline",
++    "scene": os.path.basename(args.scene.rstrip("/")),
++    "scene_path": args.scene,
++    "val_image_interval": int(args.val_image_interval),
++    "git_commit": getGitCommit(),
++    "updated_at": nowIso(),
++  }
++  summary.update(base)
++  summary.update(extra)
++
++  with open(paths["summary_path"], "w") as f:
++    json.dump(summary, f, indent=2, sort_keys=True, default=jsonDefault)
++
++def writeConfigAndRunInfo(runpath, dataset, sampler_train, sampler_val, start_epoch):
++  paths = ensureExperimentDirs(runpath)
++  split_info = readSplitInfo(args.scene)
++
++  config = {
++    "experiment": args.model_dir,
++    "model_name": "NeX",
++    "branch": "nex_baseline",
++    "created_at": nowIso(),
++    "git_commit": getGitCommit(),
++    "user": getpass.getuser(),
++    "host": os.popen("hostname 2>/dev/null").read().strip(),
++    "command": " ".join(sys.argv),
++    "scene": os.path.basename(args.scene.rstrip("/")),
++    "scene_path": args.scene,
++    "args": vars(args),
++    "start_epoch": int(start_epoch),
++    "n_train_images": int(len(sampler_train)),
++    "n_val_images": int(len(sampler_val)),
++    "split_info": split_info,
++    "no_validation_leakage": True,
++    "logging_style": "pipeline_standard",
++    "output_structure": {
++      "checkpoints": "checkpoints/",
++      "best_checkpoint": "checkpoints/best/best.pt",
++      "last_checkpoint": "checkpoints/last.pt",
++      "periodic_checkpoints": "checkpoints/periodic/epoch_XXXX.pt",
++      "config": "config.json",
++      "images": "images/epoch_XXXX/",
++      "logs": "logs/",
++      "summary": "logs/summary.json",
++      "terminal_output": "logs/terminal_output.log",
++      "metrics": "metrics.csv",
++      "val_per_image_metrics": "val_per_image_metrics.csv",
++    },
++  }
++
++  with open(paths["config_path"], "w") as f:
++    json.dump(config, f, indent=2, sort_keys=True, default=jsonDefault)
++
++  with open(paths["run_info_path"], "w") as f:
++    f.write("experiment: {}\n".format(args.model_dir))
++    f.write("model_name: NeX\n")
++    f.write("branch: nex_baseline\n")
++    f.write("created_at: {}\n".format(config["created_at"]))
++    f.write("git_commit: {}\n".format(config["git_commit"]))
++    f.write("user: {}\n".format(config["user"]))
++    f.write("host: {}\n".format(config["host"]))
++    f.write("scene: {}\n".format(args.scene))
++    f.write("command: {}\n".format(config["command"]))
++    f.write("val_image_interval: {}\n".format(args.val_image_interval))
++    f.write("n_train_images: {}\n".format(config["n_train_images"]))
++    f.write("n_val_images: {}\n".format(config["n_val_images"]))
++    f.write("val_names: {}\n".format(", ".join(split_info.get("val_names", []))))
++
++  updateSummary(runpath, {
++    "status": "initialized",
++    "pipeline_complete": False,
++    "n_train_images": config["n_train_images"],
++    "n_val_images": config["n_val_images"],
++    "val_names": split_info.get("val_names", []),
++    "best_epoch": None,
++    "best_val_mean_psnr": None,
++    "best_val_mean_ssim": None,
++    "best_val_mean_lpips": None,
++  })
++
++def recordValidation(runpath, model, optimizer, epoch, val_metrics, best_state):
++  if val_metrics is None:
++    return best_state
++
++  paths = ensureExperimentDirs(runpath)
++
++  val_mse = val_metrics.get("MSE", "")
++  val_psnr = val_metrics.get("PSNR", "")
++  val_ssim = val_metrics.get("SSIM", "")
++  val_lpips = val_metrics.get("LPIPS", "")
++
++  is_best = False
++  if val_psnr != "":
++    val_psnr_f = tensorToFloat(val_psnr)
++    if val_psnr_f > best_state["best_val_mean_psnr"]:
++      is_best = True
++      best_state["best_val_mean_psnr"] = val_psnr_f
++      best_state["best_epoch"] = int(epoch)
++      checkpoint(paths["best_ckpt"], model, optimizer, int(epoch))
++
++  appendMetricsRow(runpath, {
++    "timestamp": nowIso(),
++    "epoch": int(epoch) if isinstance(epoch, int) else epoch,
++    "phase": "val",
++    "val_mean_mse": tensorToFloat(val_mse) if val_mse != "" else "",
++    "val_mean_psnr": tensorToFloat(val_psnr) if val_psnr != "" else "",
++    "val_mean_ssim": tensorToFloat(val_ssim) if val_ssim != "" else "",
++    "val_mean_lpips": tensorToFloat(val_lpips) if val_lpips != "" else "",
++    "is_best": int(is_best),
++  })
++
++  updateSummary(runpath, {
++    "status": "running",
++    "latest_eval_epoch": int(epoch) if isinstance(epoch, int) else epoch,
++    "latest_val_mean_mse": tensorToFloat(val_mse) if val_mse != "" else "",
++    "latest_val_mean_psnr": tensorToFloat(val_psnr) if val_psnr != "" else "",
++    "latest_val_mean_ssim": tensorToFloat(val_ssim) if val_ssim != "" else "",
++    "latest_val_mean_lpips": tensorToFloat(val_lpips) if val_lpips != "" else "",
++    "best_epoch": best_state["best_epoch"],
++    "best_val_mean_psnr": best_state["best_val_mean_psnr"],
++    "best_val_mean_ssim": tensorToFloat(val_ssim) if is_best and val_ssim != "" else None,
++    "best_val_mean_lpips": tensorToFloat(val_lpips) if is_best and val_lpips != "" else None,
++  })
++
++  return best_state
++
+ def computeHomographies(sfm, feature, planes):
+   fx = feature['fx'][0]
+   fy = feature['fy'][0]
+@@ -485,10 +748,13 @@ def generateAlpha(model, dataset, dataloader, writer, runpath, suffix="", datalo
+   ''' Prediction
+     Args.
+       model.   --> trained model
+-      dataset. --> valiade dataset
++      dataset. --> validation dataset
+       writer.  --> tensorboard
+   '''
+   suffix_str = "/%06d" % suffix if isinstance(suffix, int) else "/"+str(suffix)
++  epoch_label = "epoch_%04d" % suffix if isinstance(suffix, int) else str(suffix if suffix != "" else "final")
++  eval_epoch = suffix if isinstance(suffix, int) else epoch_label
++
+   # create webgl only when using -predict or finish training
+   if not args.no_webgl and suffix =="":
+     info = getMPI(model, dataset.sfm, dataloader = dataloader_train)
+@@ -504,17 +770,22 @@ def generateAlpha(model, dataset, dataloader, writer, runpath, suffix="", datalo
+                    webpath=args.web_path,
+                    web_width= args.web_width)
+ 
++  out = None
+   if not args.no_eval and len(dataloader) > 0:
+     out = evaluation(model,
+                      dataset,
+                      dataloader,
+                      args.ray,
+-                     runpath + args.model_dir + suffix_str,
+-                     webpath=args.eval_path,
+-                     write_csv = not args.no_csv)
++                     os.path.join(runpath, args.model_dir),
++                     webpath=runpath,
++                     write_csv = not args.no_csv,
++                     epoch = eval_epoch,
++                     epoch_label = epoch_label,
++                     split_info = readSplitInfo(args.scene))
+     if writer is not None and isinstance(suffix, int):
+       for metrics, score in out.items():
+         writer.add_scalar('METRICS/{}'.format(metrics), score, suffix)
++  return out
+ 
+ 
+ def setLearningRate(optimizer, epoch):
+@@ -529,13 +800,29 @@ def train():
+   pt.manual_seed(1)
+   np.random.seed(1)
+ 
++  runpath = "results/"
++
+   if args.restart or args.clean:
+-    os.system("rm -rf " + "runs/" + args.model_dir)
++    shutil.rmtree(os.path.join(runpath, args.model_dir), ignore_errors=True)
+   if args.clean:
+     exit()
+ 
++  paths = ensureExperimentDirs(runpath)
++  setupTerminalLogging(paths)
++
++  print("================================================================================")
++  print("NeX PIPELINE-STANDARD RUN")
++  print("================================================================================")
++  print("experiment:", args.model_dir)
++  print("scene:", args.scene)
++  print("output:", paths["exp_dir"])
++  print("command:", " ".join(sys.argv))
++  print("================================================================================")
++
+   dpath = args.scene
+ 
++  writeIntervalSplitFiles(dpath, args.val_image_interval)
++
+   dataset = loadDataset(dpath)
+   sampler_train, sampler_val, dataloader_train, dataloader_val = prepareDataloaders(
+     dataset,
+@@ -565,12 +852,15 @@ def train():
+     optimizer = pt.optim.Adam(model.parameters(), lr=0)
+ 
+   start_epoch = 0
+-  runpath = "runs/"
+-  ckpt = runpath + args.model_dir + "/ckpt.pt"
++  paths = ensureExperimentDirs(runpath)
++  ckpt = paths["last_ckpt"]
+   if os.path.exists(ckpt):
+     start_epoch = loadFromCheckpoint(ckpt, model, optimizer)
+   elif args.pretrained != "":
+-    start_epoch = loadFromCheckpoint(runpath + args.pretrained + "/ckpt.pt", model, optimizer)
++    pretrained_ckpt = os.path.join(runpath, args.pretrained, "checkpoints", "last.pt")
++    if not os.path.exists(pretrained_ckpt):
++      pretrained_ckpt = os.path.join("runs", args.pretrained, "ckpt.pt")
++    start_epoch = loadFromCheckpoint(pretrained_ckpt, model, optimizer)
+ 
+   step = start_epoch * len(sampler_train)
+ 
+@@ -603,14 +893,21 @@ def train():
+     exit()
+ 
+ 
+-  backupConfigAndCode(runpath)
++  backupConfigAndCode(runpath, dataset, sampler_train, sampler_val, start_epoch)
+   ts = TrainingStatus(num_steps=args.epochs * len(sampler_train))
+-  writer = SummaryWriter(runpath + args.model_dir)
++  writer = SummaryWriter(paths["tensorboard_dir"])
+   writer.add_text('command',' '.join(sys.argv), 0)
++  best_state = {"best_val_mean_psnr": -1e30, "best_epoch": None}
++  updateSummary(runpath, {
++    "status": "running",
++    "pipeline_complete": False,
++    "start_epoch": int(start_epoch),
++    "total_epochs": int(args.epochs),
++  })
+   ts.tic()
+ 
+    # shift by 1 epoch to save last epoch to tensorboard
+-  for epoch in range(start_epoch, args.epochs+1):
++  for epoch in range(start_epoch + 1, args.epochs + 1):
+     epoch_loss_total = 0
+     epoch_mse = 0
+ 
+@@ -658,10 +955,34 @@ def train():
+       if step % args.tb_toc == 0:  print(toc_msg)
+       ts.tic()
+ 
+-    writer.add_scalar('loss/total', epoch_loss_total/len(sampler_train), epoch)
+-    writer.add_scalar('loss/mse', epoch_mse/len(sampler_train), epoch)
+-
+-    if epoch % args.tb_saveimage == 0 and args.tb_saveimage > 0:
++    avg_loss_total = epoch_loss_total / len(sampler_train)
++    avg_mse = epoch_mse / len(sampler_train)
++    train_psnr = psnrFromMse(avg_mse)
++
++    writer.add_scalar('loss/total', avg_loss_total, epoch)
++    writer.add_scalar('loss/mse', avg_mse, epoch)
++    writer.add_scalar('loss/train_psnr', train_psnr, epoch)
++
++    appendMetricsRow(runpath, {
++      "timestamp": nowIso(),
++      "epoch": int(epoch),
++      "phase": "train",
++      "train_loss_total": tensorToFloat(avg_loss_total),
++      "train_mse": tensorToFloat(avg_mse),
++      "train_psnr": train_psnr,
++      "lr": float(optimizer.param_groups[0]["lr"]),
++    })
++
++    updateSummary(runpath, {
++      "status": "running",
++      "latest_epoch": int(epoch),
++      "latest_step": int(step),
++      "latest_train_loss_total": tensorToFloat(avg_loss_total),
++      "latest_train_mse": tensorToFloat(avg_mse),
++      "latest_train_psnr": train_psnr,
++    })
++
++    if args.tb_saveimage > 0 and epoch % args.tb_saveimage == 0:
+       with pt.no_grad():
+         render = patch_render(model, dataset.sfm, feature, args.ray)
+         Spec = getMPI(model, dataset.sfm, m = args.sublayers, dataloader = None)
+@@ -676,7 +997,8 @@ def train():
+         pt.cuda.empty_cache()
+ 
+     if epoch % args.tb_savempi == 0 and args.tb_savempi > 0 and epoch > 0:
+-      generateAlpha(model, dataset, dataloader_val, writer, runpath, epoch)
++      val_metrics = generateAlpha(model, dataset, dataloader_val, writer, runpath, epoch)
++      best_state = recordValidation(runpath, model, optimizer, epoch, val_metrics, best_state)
+       pt.cuda.empty_cache()
+ 
+     var = pt.mean(pt.std(model.illumination, 2)** 2)
+@@ -684,20 +1006,41 @@ def train():
+     writer.add_scalar('loss/illumination_mean', mean, epoch)
+     writer.add_scalar('loss/illumination_var', var, epoch)
+ 
+-    if (epoch+1) % args.checkpoint == 0 or epoch == args.epochs-1:
++    if epoch % args.checkpoint == 0 or epoch == args.epochs:
+       if np.isnan(loss_total.item()):
+         exit()
+-      checkpoint(ckpt, model, optimizer, epoch+1)
++      save_epoch = epoch
++      checkpoint(paths["last_ckpt"], model, optimizer, save_epoch)
++      periodic_path = os.path.join(paths["periodic_dir"], "epoch_%04d.pt" % save_epoch)
++      checkpoint(periodic_path, model, optimizer, save_epoch)
+ 
+   print('Finished Training')
+-  generateAlpha(model, dataset, dataloader_val, None, runpath, dataloader_train = dataloader_train)
++
++  if not (args.tb_savempi > 0 and args.epochs % args.tb_savempi == 0):
++    val_metrics = generateAlpha(model, dataset, dataloader_val, None, runpath, args.epochs, dataloader_train = dataloader_train)
++    best_state = recordValidation(runpath, model, optimizer, args.epochs, val_metrics, best_state)
++
++  checkpoint(paths["last_ckpt"], model, optimizer, args.epochs)
++
++  updateSummary(runpath, {
++    "status": "finished",
++    "pipeline_complete": True,
++    "finished_at": nowIso(),
++    "final_epoch": int(args.epochs),
++    "best_epoch": best_state["best_epoch"],
++    "best_val_mean_psnr": best_state["best_val_mean_psnr"] if best_state["best_epoch"] is not None else None,
++  })
++
++  writer.close()
++
+   if not args.no_video:
+-    render_video(model, dataset, args.ray, os.path.join(runpath, 'video_output', args.model_dir))
++    render_video(model, dataset, args.ray, os.path.join(runpath, args.model_dir, 'video_output'))
+   if args.http:
+     serve_files(args.model_dir, args.web_path)
+ 
+ def checkpoint(file, model, optimizer, epoch):
+-  print("Checkpointing Model @ Epoch %d ..." % epoch)
++  os.makedirs(os.path.dirname(file), exist_ok=True)
++  print("Checkpointing Model @ Epoch %d -> %s ..." % (epoch, file))
+   pt.save({
+     'epoch': epoch,
+     'model_state_dict': model.state_dict(),
+@@ -712,18 +1055,64 @@ def loadFromCheckpoint(file, model, optimizer):
+   print("Loading %s Model @ Epoch %d" % (args.pretrained, start_epoch))
+   return start_epoch
+ 
+-def backupConfigAndCode(runpath):
++def backupConfigAndCode(runpath, dataset=None, sampler_train=None, sampler_val=None, start_epoch=0):
+   if args.predict or args.clean:
+     return
+-  model_path = os.path.join(runpath, args.model_dir)
+-  os.makedirs(model_path, exist_ok = True)
+-  now = datetime.now()
+-  t = now.strftime("_%Y_%m_%d_%H:%M:%S")
+-  with open(model_path + "/args.json", 'w') as out:
+-    json.dump(vars(args), out, indent=2, sort_keys=True)
+-  os.system("cp " + os.path.abspath(__file__) + " " + model_path + "/")
+-  os.system("cp " + os.path.abspath(__file__) + " " + model_path + "/" + __file__.replace(".py", t + ".py"))
+-  os.system("cp " + model_path + "/args.json " + model_path + "/args" + t + ".json")
++  writeConfigAndRunInfo(runpath, dataset, sampler_train, sampler_val, start_epoch)
++
++
++def writeIntervalSplitFiles(dpath, val_image_interval):
++  interval = int(val_image_interval)
++  if interval <= 1:
++    raise ValueError("val_image_interval must be >= 2")
++
++  img_dir = os.path.join(dpath, "images")
++  if not os.path.isdir(img_dir):
++    return
++
++  imgs = sorted([
++    f for f in os.listdir(img_dir)
++    if f.lower().endswith((".png", ".jpg", ".jpeg"))
++  ])
++
++  if len(imgs) == 0:
++    return
++
++  ids = list(range(len(imgs)))
++  val_ids = [i for i in ids if i % interval == 0]
++  train_ids = [i for i in ids if i % interval != 0]
++
++  if len(train_ids) == 0:
++    raise ValueError("Empty train split. Increase val_image_interval.")
++  if len(val_ids) == 0:
++    raise ValueError("Empty validation split.")
++
++  train_names = [imgs[i] for i in train_ids]
++  val_names = [imgs[i] for i in val_ids]
++
++  with open(os.path.join(dpath, "train_image.txt"), "w") as f:
++    f.write("\n".join(train_names) + "\n")
++
++  with open(os.path.join(dpath, "val_image.txt"), "w") as f:
++    f.write("\n".join(val_names) + "\n")
++
++  split_info = {
++    "val_image_interval": interval,
++    "val_split_rule": "start_from_first_image_zero_based_ids_mod_interval_eq_0",
++    "n_images": len(imgs),
++    "train_ids_0based": train_ids,
++    "val_ids_0based": val_ids,
++    "train_names": train_names,
++    "val_names": val_names,
++  }
++
++  with open(os.path.join(dpath, "split_info.json"), "w") as f:
++    json.dump(split_info, f, indent=2)
++
++  print("[SPLIT] interval={} total={} train={} val={}".format(
++    interval, len(imgs), len(train_ids), len(val_ids)
++  ))
++  print("[SPLIT] val_names={}".format(", ".join(val_names)))
+ 
+ 
+ def loadDataset(dpath):
+@@ -743,7 +1132,8 @@ def loadDataset(dpath):
+                            invz=args.invz,
+                            render_style=render_style,
+                            offset=args.offset,
+-                           cv2resize=args.cv2resize)
++                           cv2resize=args.cv2resize,
++                           val_image_interval=args.val_image_interval)
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/utils/colmap_runner.py b/utils/colmap_runner.py
+index 057cda3..5e13426 100644
+--- a/utils/colmap_runner.py
++++ b/utils/colmap_runner.py
+@@ -75,7 +75,11 @@ def load_colmap_data(realdir):
+     LLFF assumes cx, cy to locate at the center of image (H/2, W/2)
+     Whereas we get it from colmap prediction
+   '''
+-  camerasfile = os.path.join(realdir, 'dense/sparse/cameras.bin')
++  sparse_dir = os.path.join(realdir, 'dense/sparse')
++  if not os.path.exists(sparse_dir):
++    sparse_dir = os.path.join(realdir, 'sparse/0')
++
++  camerasfile = os.path.join(sparse_dir, 'cameras.bin')
+   camdata = read_cameras_binary(camerasfile)
+ 
+   # cam = camdata[camdata.keys()[0]]
+@@ -86,7 +90,7 @@ def load_colmap_data(realdir):
+ 
+   hwf_cxcy = np.array([h, w, fx, fy, cx, cy]).reshape([6,1])
+ 
+-  imagesfile = os.path.join(realdir, 'dense/sparse/images.bin')
++  imagesfile = os.path.join(sparse_dir, 'images.bin')
+   imdata = read_images_binary(imagesfile)
+ 
+   w2c_mats = []
+@@ -109,7 +113,7 @@ def load_colmap_data(realdir):
+ 
+   #poses = np.concatenate([poses, np.tile(hwf[..., np.newaxis], [1,1,poses.shape[-1]])], 1)
+ 
+-  points3dfile = os.path.join(realdir, 'dense/sparse/points3D.bin')
++  points3dfile = os.path.join(sparse_dir, 'points3D.bin')
+   pts3d = read_points3d_binary(points3dfile)
+ 
+   # must switch to [-u, r, -t] from [r, -u, t], NOT [r, u, -t]
+@@ -155,7 +159,7 @@ def save_poses(basedir, poses, pts3d, perm, hwf_cxcy):
+ 
+ def need_run_coolmap(basedir):
+   files_needed = ['{}.bin'.format(f) for f in ['cameras', 'images', 'points3D']]
+-  if os.path.exists(os.path.join(basedir, 'poses_bounds.npy') and os.path.join(basedir, 'hwf_cxcy.npy')):
++  if os.path.exists(os.path.join(basedir, 'poses_bounds.npy')) and os.path.exists(os.path.join(basedir, 'hwf_cxcy.npy')):
+     return False
+   if os.path.exists(os.path.join(basedir, 'sparse/0')):
+     files_had = os.listdir(os.path.join(basedir, 'sparse/0'))
+diff --git a/utils/load_llff.py b/utils/load_llff.py
+index caf8ef9..bb2e1b7 100644
+--- a/utils/load_llff.py
++++ b/utils/load_llff.py
+@@ -349,7 +349,8 @@ def load_llff_data(basedir, factor=8, recenter=True, bd_factor=.75, spherify=Fal
+   else:
+     # reference_view_id should stay in train set only
+     validation_ids = np.arange(poses.shape[0])
+-    validation_ids[::8] = -1
++    interval = int(split_train_val)
++    validation_ids[::interval] = -1
+     validation_ids = validation_ids < 0
+     train_ids = np.logical_not(validation_ids)
+     train_poses = poses[train_ids]
+diff --git a/utils/mpi_utils.py b/utils/mpi_utils.py
+index 4f6c2ed..e911634 100644
+--- a/utils/mpi_utils.py
++++ b/utils/mpi_utils.py
+@@ -28,7 +28,7 @@ import shutil
+ class OrbiterDataset(Dataset):
+   def __init__(self, dataset, ref_img, scale, dmin,
+       dmax, invz, transform=None,
+-      render_style='', offset=200, cv2resize=False):
++      render_style='', offset=200, cv2resize=False, val_image_interval=5):
+     self.scale = scale
+     self.dataset = dataset
+     self.transform = transform
+@@ -39,7 +39,8 @@ class OrbiterDataset(Dataset):
+                        invz=invz,
+                        scale=scale,
+                        render_style=render_style,
+-                       offset = offset)
++                       offset = offset,
++                       val_image_interval=val_image_interval)
+ 
+     self.sfm.ref_rT = pt.from_numpy(self.sfm.ref_img['r']).t()
+     self.sfm.ref_t = pt.from_numpy(self.sfm.ref_img['t'])
+@@ -274,21 +275,38 @@ def outputCompactMPI(mpi_reflection, sfm, planes, model_dir_nolp, layers, sublay
+           "sharedrgb", exls, maxcol, offset, layers, sublayers)
+     print("WebGL saved to {}".format(webpath + outputFile))
+ 
+-def evaluation(model, dataset, dataloader, ray, model_dir_nolp, webpath = 'runs/html/', write_csv = True):
+-  outputFile = "/".join(model_dir_nolp.split("/")[1:])
++def evaluation(model, dataset, dataloader, ray, model_dir_nolp, webpath = 'results/', write_csv = True, epoch = "", epoch_label = "final", split_info = None):
++  exp_dir = model_dir_nolp
++  images_dir = os.path.join(exp_dir, "images", epoch_label)
++  os.makedirs(images_dir, exist_ok=True)
+ 
+-  info_dict = measurement(model, dataset.sfm, dataloader, ray, webpath + outputFile + '/rendered_val')
++  info_dict = measurement(model, dataset.sfm, dataloader, ray, images_dir, epoch, split_info)
+   df = pd.DataFrame.from_dict(info_dict)
+ 
++  if "val_image_index" in df.columns:
++    df = df.sort_values("val_image_index").reset_index(drop=True)
++
++  metric_cols = ["mse", "psnr", "ssim", "lpips"]
++
+   print("===================================")
+   print("Measurement Result")
+   print("===================================")
+   print(df.to_string(index=False))
+   print("-----------------------------------")
+-  print(df.mean().to_string())
++  print(df[metric_cols].mean().to_string())
++
+   if write_csv:
+-    df.to_csv(webpath + outputFile +'/ssim_psnr.csv', index=False)
+-  return df.mean().to_dict()
++    csv_path = os.path.join(exp_dir, "val_per_image_metrics.csv")
++    write_header = not os.path.exists(csv_path)
++    df.to_csv(csv_path, mode="a", header=write_header, index=False)
++
++  means = df[metric_cols].mean().to_dict()
++  return {
++    "MSE": float(means["mse"]),
++    "PSNR": float(means["psnr"]),
++    "SSIM": float(means["ssim"]),
++    "LPIPS": float(means["lpips"]),
++  }
+ 
+ def render_video(model, dataset, ray, video_path = 'runs/video/', render_type='default', dataloader = None):
+   print("render_video: {}".format(render_type))
+@@ -380,43 +398,89 @@ def patch_render(model, sfm, feature, ray):
+     out = predicted_image.view(gt.shape[0], gt.shape[1], gt.shape[2], gt.shape[3])
+   return out
+ 
+-def measurement(model, sfm, dataloader, ray, write_path = ''):
++def measurement(model, sfm, dataloader, ray, write_path = '', epoch = "", split_info = None):
+   """ calculate PSNR/SSIM and LPIPS"""
+   psnrs = []
+   ssims = []
+   lpipss = []
++  mses = []
+   filenames = []
++  epochs = []
++  val_image_indices = []
++  original_frame_indices_0based = []
++  original_frame_indices_1based = []
++
++  split_info = split_info or {}
++  val_names = split_info.get("val_names", [])
++  val_ids = split_info.get("val_ids_0based", [])
++
+   if write_path != '':
+     os.makedirs(write_path,exist_ok=True)
++
+   lpips_model = lpips.LPIPS(net='vgg')
++
+   for i, feature in enumerate(dataloader):
+     gt = feature['image'] # "ground-truth"
+     predict_image = patch_render(model, sfm, feature, ray)
+ 
+-    # calculate LPIPS. It's require to change image range from [0,1] to [-1,1]
++    # calculate LPIPS. It requires changing image range from [0,1] to [-1,1]
+     gt_lpips = gt.clone().cpu() * 2.0 - 1.0
+     predict_image_lpips = predict_image.clone().detach().cpu() * 2.0 - 1.0
+     lpips_result = lpips_model.forward(predict_image_lpips, gt_lpips).cpu().detach().numpy()
+     lpipss.append(np.squeeze(lpips_result))
+-    # calculate PSNR/SSIM
++
++    # calculate PSNR/SSIM/MSE
+     predict_image = predict_image.permute(0, 2, 3, 1).cpu().detach().numpy()[0]
+     gt = gt.permute(0, 2, 3, 1).numpy()[0]
+-    ssims.append(structural_similarity(predict_image, gt, win_size=11, multichannel=True, gaussian_weights=True))
+-    psnrs.append(peak_signal_noise_ratio(predict_image, gt, data_range=1.0))
+ 
+-    # save output image
+-    filename = '_'.join(feature['path'][0].split('/'))
+-    filenames.append(filename)
++    mse = float(np.mean((predict_image - gt) ** 2))
++    ssim = structural_similarity(predict_image, gt, win_size=11, multichannel=True, gaussian_weights=True)
++    psnr = peak_signal_noise_ratio(predict_image, gt, data_range=1.0)
++
++    mses.append(mse)
++    ssims.append(ssim)
++    psnrs.append(psnr)
++
++    image_name = os.path.basename(feature['path'][0])
++    stem = os.path.splitext(image_name)[0]
++
++    if image_name in val_names:
++      val_idx = val_names.index(image_name)
++      frame_0based = int(val_ids[val_idx]) if val_idx < len(val_ids) else val_idx
++    else:
++      val_idx = i
++      frame_0based = i
++
++    frame_1based = frame_0based + 1
++
++    epochs.append(epoch)
++    val_image_indices.append(val_idx)
++    original_frame_indices_0based.append(frame_0based)
++    original_frame_indices_1based.append(frame_1based)
++    filenames.append(image_name)
++
++    # save output images in pipeline-standard naming
+     if write_path != '':
+-      filename = '{}.png'.format('.'.join(filename.split('.')[:-1]))
+-      io.imsave(os.path.join(write_path, '{}_ours.png'.format(filename)), (predict_image * 255).astype(np.uint8))
+-      io.imsave(os.path.join(write_path, '{}_gt.png'.format(filename)), (gt * 255).astype(np.uint8))
++      prefix = "val_%02d_frame_%04d_%s" % (val_idx, frame_1based, stem)
++
++      error = np.mean(np.abs(predict_image - gt), axis=2)
++      error = np.clip(error * 4.0, 0.0, 1.0)
++      error_rgb = np.repeat(error[:, :, None], 3, axis=2)
++
++      io.imsave(os.path.join(write_path, prefix + "_pred.png"), (np.clip(predict_image, 0.0, 1.0) * 255).astype(np.uint8))
++      io.imsave(os.path.join(write_path, prefix + "_gt.png"), (np.clip(gt, 0.0, 1.0) * 255).astype(np.uint8))
++      io.imsave(os.path.join(write_path, prefix + "_error.png"), (error_rgb * 255).astype(np.uint8))
+       
+   return {
+-    'name': filenames,
+-    'PSNR': psnrs,
+-    'SSIM': ssims,
+-    'LPIPS': lpipss
++    'epoch': epochs,
++    'val_image_index': val_image_indices,
++    'original_frame_index_0based': original_frame_indices_0based,
++    'original_frame_index_1based': original_frame_indices_1based,
++    'image_name': filenames,
++    'mse': mses,
++    'psnr': psnrs,
++    'ssim': ssims,
++    'lpips': lpipss
+   }
+ 
+ def getPlanes(sfm, n):
+diff --git a/utils/sfm_utils.py b/utils/sfm_utils.py
+index 51bfffe..89e7fc1 100644
+--- a/utils/sfm_utils.py
++++ b/utils/sfm_utils.py
+@@ -22,7 +22,7 @@ from utils.load_llff import load_llff_data
+ 
+ class SfMData:
+   def __init__(self, dataset, ref_img='', scale=1, dmin=0,
+-    dmax=0, invz=0, render_style='', offset=200):
++    dmax=0, invz=0, render_style='', offset=200, val_image_interval=5):
+     self.scale = scale
+     self.ref_cam = None
+     self.ref_img = None
+@@ -36,9 +36,10 @@ class SfMData:
+     self.white_background = False #change background to white if transparent.
+     self.index_split = [] #use for split dataset in blender
+     self.offset = 200
++    self.val_image_interval = int(val_image_interval)
+     # Detect dataset type
+     can_hanle = self.readDeepview(dataset) \
+-      or self.readLLFF(dataset, ref_img) \
++      or self.readLLFF(dataset, ref_img, self.val_image_interval) \
+       or self.readColmap(dataset) 
+     if not can_hanle:
+       raise Exception('Unknow dataset type')
+@@ -116,7 +117,7 @@ class SfMData:
+       self.offset = offset
+     print("dmin = %f, dmax = %f, invz = %d, offset = %d" % (self.dmin, self.dmax, self.invz, self.offset))
+ 
+-  def readLLFF(self, dataset, ref_img = ""):
++  def readLLFF(self, dataset, ref_img = "", val_image_interval=5):
+     """
+     Read LLFF
+     Parameters:
+@@ -131,7 +132,7 @@ class SfMData:
+     if not os.path.exists(image_dir) and not os.path.isdir(image_dir):
+       return False
+     # load R,T
+-    train_poses, reference_depth, reference_view_id, render_poses, poses, intrinsic, self.webgl = load_llff_data(dataset,factor=None, split_train_val = 8, render_style = self.render_style)
++    train_poses, reference_depth, reference_view_id, render_poses, poses, intrinsic, self.webgl = load_llff_data(dataset, factor=None, split_train_val=val_image_interval, render_style=self.render_style)
+     # get all image of this dataset
+     images_path = [os.path.join('images', f) for f in sorted(os.listdir(image_dir))]
+ 
+@@ -159,10 +160,9 @@ class SfMData:
+ 
+     # if not set ref_cam, use LLFF ref_cam
+     if ref_img == "":
+-      # restore image id back from reference_view_id
+-      # by adding missing validation index
+-      image_id = reference_view_id + 1 #index 0 alway in validation set
+-      image_id = image_id  + (image_id // 8) #every 8 will be validation set
++      # restore image id back from reference_view_id using dynamic validation interval
++      train_ids_all = [i for i in range(len(self.imgs)) if i % int(val_image_interval) != 0]
++      image_id = train_ids_all[reference_view_id]
+       self.ref_cam = self.cams[0]
+ 
+       self.ref_img = self.imgs[image_id] # here is reference view from train set
+diff --git a/utils/utils.py b/utils/utils.py
+index b2346d8..08091ce 100644
+--- a/utils/utils.py
++++ b/utils/utils.py
+@@ -82,8 +82,15 @@ def prepareDataloaders(dataset, dpath, random_split=False, train_ratio=1, num_wo
+     def clean_path(list_of_path):
+       return list(map(lambda x: str(os.path.basename(x)).lower(), list_of_path))
+ 
+-    if os.path.exists(os.path.join(dpath,'poses_bounds.npy')):
+-      #LLFF dataset which is use every 8 images to be training data
++    if os.path.exists(dpath + "/train_image.txt") and os.path.exists(dpath + "/val_image.txt"):
++      indices_train = get_indices('train')
++      indices_val = get_indices('val')
++      dataset.sfm.index_split = [
++        indices_train,
++        indices_val
++      ]
++    elif os.path.exists(os.path.join(dpath,'poses_bounds.npy')):
++      # original LLFF fallback split
+       indices_total = list(range(len(dataset.imgs)))
+       indices_val = indices_total[::8]
+       indices_train = list(filter(lambda x: x not in indices_val, indices_total))
+@@ -93,7 +100,6 @@ def prepareDataloaders(dataset, dpath, random_split=False, train_ratio=1, num_wo
+     else:
+       indices_train = get_indices('train')
+       indices_val = get_indices('val')
+-      # save indices to sfm for render propose
+       dataset.sfm.index_split = [
+         indices_train,
+         indices_val
+@@ -175,10 +181,11 @@ class TrainingStatus:
+       barText = "Command: CUDA_VISIBLE_DEVICES=%s python %s" % (os.environ['CUDA_VISIBLE_DEVICES'], self.statusbar)
+     else:
+       barText = "Command: python %s" % (self.statusbar)
+-    try:
+-      drawBottomBar(barText)
+-    except:
+-      pass #skip bottombar if it no output
++    if os.environ.get("NEX_DISABLE_BOTTOM_BAR", "0") != "1":
++      try:
++        drawBottomBar(barText)
++      except:
++        pass # skip bottombar if it no output
+     return msg
+ 
+ # use in render_depth
